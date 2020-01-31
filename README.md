@@ -9,3 +9,6 @@ Generate a [deBruijn Sequence](http://en.wikipedia.org/wiki/De_Bruijn_sequence) 
 
 Ports the implementation of (jgeisler0303)[https://github.com/jgeisler0303/deBruijnDecode] to python.
 
+## Alternative
+https://github.com/alexbowe/debdec
+
