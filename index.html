@@ -38,7 +38,7 @@
     <h3>Decoder Source Code</h3>
     <p>This the source code of the decoder run below.</p>
     <div style="overflow:auto; height:400px; width:80%">
-    <script src="http://gist-it.appspot.com/github/jgeisler0303/deBruijnDecode/blob/gh-pages/decodableDeBruijn.js?footer=0&slice=177:221"></script>
+    <!-- <script src="http://gist-it.appspot.com/github/jgeisler0303/deBruijnDecode/blob/gh-pages/decodableDeBruijn.js?footer=0&slice=177:221"></script> -->
     </div>
     Click <a href="https://github.com/jgeisler0303/deBruijnDecode/blob/gh-pages/decodableDeBruijn.js">here</a> to view the entire source code including the support functions.
     
@@ -46,9 +46,11 @@
     <div id= deBruijnDecodeTest></div>
     
     <script type="text/javascript">
-    deBruijn.c.value= 2;
+    deBruijn.c.value= 4;
     deBruijn.n.value= 3;
     update();
+    setTimeout(test, 2000);
+    
     </script>
     
     </body>

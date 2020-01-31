@@ -5,34 +5,9 @@ var T;
 var K;
 var L;
 
-function DeBruijn(c, n) {
-  this.c= c;
-  this.n= n;
-  this.a= new Array(c*n);
-  this.s= new Array();
-  for(var j= 0; j<c*n; j++)
-    this.a[j]= 0;
-  this.generate(1, 1);
-}
 
-DeBruijn.prototype.generate= function(t, p) {
-  // console.log("t: "+ t + ", p: " + p + ", c: " + this.c);
-  if(t>this.n) {
-    if((this.n%p)==0) {
-      for(var j= 0; j<p; j++)
-	this.s.push(this.a[j+1]);
-      // console.log(this.a.join(" "));
-    }
-  } else {
-    this.a[t]= this.a[t-p];
-    this.generate(t+1, p);
-    for(var j= this.a[t-p]+1; j<this.c; j++) {
-      // console.log("j: "+ j + ", a: " + this.a.join(" "));
-      
-      this.a[t]= j;
-      this.generate(t+1, t);
-    }
-  }
+function debugLog() {
+  console.log(...arguments);
 }
 
 function mod(n, m) {
@@ -107,71 +82,136 @@ function findOnes(s, n) {
   return findWord(s, w);
 }
 
-function decodableDeBruijn(c, n) {
-  
-  function operator_D_inv(s, b, c) {
-    w= sum(s)%c;
-    // console.log("w= " + w);
-    if(w!=0) {
-      var s_= s;
-      for(var i= 0; i<c/gcd(c, w)-1; i++)
-	s= s.concat(s_);
+function operator_D_inv(s, b, c) {
+  w = sum(s) % c;
+
+  debugLog("operator_D_inv :: s: " + s.join(" ") + " b: " + b + " c: " + c + " w: " + w);
+
+  if (w!=0) {
+    var s_= s;
+    var mr = ((c/gcd(c, w))-1);
+    debugLog("operator_D_inv :: s: " + s.join(" ") + " b: " + b + " c: " + c + " w: " + w + " mr: " + mr);
+
+    for(var i= 0; i<mr; i++) {
+      s= s.concat(s_);
     }
-    // console.log("s= " + s);
-    s= cumsum(s.slice(0, -1));
-    // console.log("s= " + s);
-    s.unshift(0);
-    // console.log("s= " + s);
-    for(var i= 0; i<s.length; i++)
-      s[i]= mod(s[i]+b, c);
-      
-    return s;
   }
 
-  function rho(p, e, s) {
-    var s_= s;
-    s= s.slice(0, p);
-    // console.log("s= " + s);
-    var e_= new Array();
-    for(var i= e; i<e+c; i++)
-      e_[i-e]= i%c;
-    // console.log("e_= " + e_);
-    s= s.concat(e_);
-    // console.log("s_.slice(p)= " + s_.slice(p));
-    s= s.concat(s_.slice(p));
-    
-    return s;
-  }
+  debugLog("operator_D_inv :: s             : " + s.join(" ") + " b: " + b + " c: " + c + " w: " + w + " s.length: " + s.length);
   
+  s= cumsum(s.slice(0, -1));
+
+  debugLog("operator_D_inv :: s cumsum      : " + s.join(" ") + " b: " + b + " c: " + c + " w: " + w + " s.length: " + s.length);
+
+  s.unshift(0);
+
+  debugLog("operator_D_inv :: s cumsum 0    : " + s.join(" ") + " b: " + b + " c: " + c + " w: " + w + " s.length: " + s.length);
+
+  for(var i= 0; i<s.length; i++) {
+    s[i]= mod(s[i]+b, c);
+  }
+    
+  debugLog("operator_D_inv :: s cumsum 0 mod: " + s.join(" ") + " b: " + b + " c: " + c + " w: " + w + " s.length: " + s.length);
+
+  return s;
+}
+
+function rho(c, p, e, s) {
+  var s_= s;
+  s= s.slice(0, p);
+  // debugLog("rho :: s= " + s);
+  var e_= new Array();
+  for(var i= e; i<e+c; i++) {
+    e_[i-e]= i%c;
+  }
+  // debugLog("rho :: e_= " + e_);
+  s= s.concat(e_);
+  // debugLog("rho :: s_.slice(p)= " + s_.slice(p));
+  s= s.concat(s_.slice(p));
+  
+  return s;
+}
+
+
+
+
+
+function DeBruijn(c, n) {
+  this.c= c;
+  this.n= n;
+  this.a= new Array(c*n);
+  this.s= new Array();
+  debugLog("DeBruijn. :: c: "+ c + ", n: " + n + ", a: " + this.a.join(" ") + ", s: " + this.s.join(" "));
+  for(var j= 0; j<c*n; j++) {
+    this.a[j]= 0;
+  }
+  this.generate(1, 1);
+  debugLog("DeBruijn. :: c: "+ c + ", n: " + n + ", a: " + this.a.join(" ") + ", s: " + this.s.join(" "));
+}
+
+
+DeBruijn.prototype.generate= function(t, p) {
+  // debugLog("DeBruijn.generate :: c: " + this.c + ", n: " + this.n + ", t: "+ t + ", p: " + p);
+  if(t>this.n) {
+    if((this.n%p)==0) {
+      for(var j= 0; j<p; j++){
+	      this.s.push(this.a[j+1]);
+        // debugLog("DeBruijn.generate :: c: " + this.c + ", n: " + this.n + ", t: "+ t + ", p: " + p + ", j: " + j + ", a: " + this.a.join(" ") + ", s: " + this.s.join(" "));
+      }
+    }
+  } else {
+    this.a[t]= this.a[t-p];
+    this.generate(t+1, p);
+    for(var j= this.a[t-p]+1; j<this.c; j++) {
+      // debugLog("DeBruijn.generate :: c: " + this.c + ", n: " + this.n + ", t: "+ t + ", p: " + p + ", j: "+ j + ", a: " + this.a.join(" ") + ", s: " + this.s.join(" "));
+      
+      this.a[t]= j;
+      this.generate(t+1, t);
+    }
+  }
+}
+
+function decodableDeBruijn(c, n) {  
+  debugLog("decodableDeBruijn :: c: " + c + ", n: " + n);
+
   var t;
   if(n<=2) {
-    db= new DeBruijn(c, 2);
-    t= db.s;
-    var t_= t.concat(t.slice(0, 2));
-    for(var i= 0; i<Math.pow(c, 2); i++)
-      T[wordIndex(t_.slice(i, i+2), c)]= i;
+      db     = new DeBruijn(c, 2);
+      t      = db.s;
+      var t_ = t.concat(t.slice(0, 2));
 
+      debugLog("decodableDeBruijn :: c: " + c + ", n: " + n + ", t: " + t.join(" ") + ", t_: " + t_.join(" "));
+
+      for(var i= 0; i<Math.pow(c, 2); i++) {
+          k = t_.slice(i, i+2);
+          idx = wordIndex(k, c);
+          debugLog("decodableDeBruijn :: c: " + c + ", n: " + n + ", t: " + t.join(" ") + ", t_: " + t_.join(" ") + ", i: " + i + ", k: " + k + ", idx: " + idx);
+          T[idx]= i;
+      }
   } else {
-    var n_= n-1;
-    s= decodableDeBruijn(c, n_);
-    // console.log("generating for n= " + n + ", n_= " + n_);
-    var k= findOnes(s, n_);
-    // console.log("k= " + k);
+    var n_ = n-1;
+    s = decodableDeBruijn(c, n_);
+    debugLog("decodableDeBruijn :: c: " + c + ", n: " + n + ", s: " + s.join(" "));
+
+    var k = findOnes(s, n_);
+    debugLog("decodableDeBruijn :: c: " + c + ", n: " + n + ", k: " + k);
     
-    var s_= s.slice(0, k).concat(s.slice(k+1));
-    var s_hat= operator_D_inv(s_, 0, c);
-    // console.log("s_hat= " + s_hat);
+    var s_    = s.slice(0, k).concat(s.slice(k+1));
+    var s_hat = operator_D_inv(s_, 0, c);
+    debugLog("decodableDeBruijn :: c: " + c + ", n: " + n + ", s_   : " + s_   .join(" ") + " ["+s_   .length+"]");
+    debugLog("decodableDeBruijn :: c: " + c + ", n: " + n + ", s_hat: " + s_hat.join(" ") + " ["+s_hat.length+"]");
 
     p= (c-1)*(Math.pow(c, n_) - 1) + k;
     // console.log("(c-1)*(Math.pow(c, n_) - 1)= " + n_);
     // console.log("p= " + p);
     e= s_hat[p];
     // console.log("e= " + e);
-    t= rho(p, e, s_hat);
+    t= rho(c, p, e, s_hat);
     L[n-3]= t.slice(0, Math.pow(c, n_)-1);
   }    
 
   K[n-2]= findOnes(t, n);
+
   return t;
 }
 

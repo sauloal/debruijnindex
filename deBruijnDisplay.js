@@ -95,10 +95,11 @@ function change(viewContainer, s, colorOrder) {
     L= new Array(n-2);
     K= new Array(n-1);
     s= decodableDeBruijn(c, n);
-    // console.log("T= " + T);
-    // for(var i= 0; i<L.length; i++)
-     // console.log("L[" + i + "]= " + L[i]);
-    // console.log("K= " + K);
+    console.log("T= " + T);
+    for(var i= 0; i<L.length; i++) {
+      console.log("L[" + i + "]= " + L[i]);
+      console.log("K= " + K);
+    }
   }
   
   function clearDecoderTest(viewContainer) {
