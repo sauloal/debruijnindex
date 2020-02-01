@@ -1,7 +1,9 @@
-#! /usr/local/bin/python
+#!/usr/bin/env python3
+
 
 ## Source: https://github.com/alexbowe/debdec
 
+from functools import lru_cache
 import itertools as it
 import math
 
@@ -68,6 +70,7 @@ def count_right_zero_bits(x):
 
 # NOTE: could replace cycle with bit-twiddling
 # and keep v as an integer, then not have to call psi_inv
+
 def A_inv(v, t):
   v_prime = rotate_right(v, t)
   return psi_inv(v_prime)
@@ -80,6 +83,7 @@ def B_inv(v, t):
   return b
 
 def C_inv(v, t):
+  # print("C_inv", v, t)
   if t == 0:
     return psi_inv(v)
   n = len(v)
@@ -98,6 +102,7 @@ def D_inv(v, t):
   return psi_inv(w[-n:])
 
 def E_inv(v, t):
+  # print("E_inv", v, t)
   return D_inv(v,t) if t == 0 else C_inv(v, t-1)
 
 def F_inv(v, t):
@@ -115,7 +120,7 @@ def F_inv(v, t):
 # an n-bit sequence from Z_2 (for some n)
 # (in other words, returns binary representation)
 def psi(n, x):
-  b = map(int, list(bin(x)[2:]))
+  b = list(map(int, list(bin(x)[2:])))
   return [0] * (n - len(b)) + b
 
 # Inverse of the above function: takes a n-bit sequence
@@ -133,6 +138,7 @@ def d_x(n, k, l, x):
   return psi(n, x) * k + theta(n, x) * l
 
 def decode_sdb(n, k, l, v, f):
+  # print("decode_sdb", n, k, l, v, f)
   n = len(v)
   if l == 0:
     t = f % n
@@ -151,30 +157,34 @@ def decode_sdb(n, k, l, v, f):
 ## BINARY BASE DE BRUIJN DECODER (D + R) ##
 
 # Position of 1^n
+@lru_cache(maxsize=None)
 def j(n):
   if n <= 0: return
   if n <= 3: return n
-  b = lambda t: (2**t ^ (-1)**t)/3
+  b = lambda t: (2**t ^ (-1)**t)//3
   t = count_right_zero_bits(n)
   q = n >> t
   if q == 1: return 2**(n-1) + b(t)
   bt = b(t + 2)
   m = int(lg(q))
-  m += (4*q)/2**m == 5
+  m += (4*q)//2**m == 5
   if m % 2 != 0: bt = -bt
   return 2**(n-1) + bt
 
+@lru_cache(maxsize=None)
 def delta(n):
   assert n%2 == 0 # only for even n
   return 1 - 2 * (j(n/2) % 4 == 3)
 
 # position of 1^(2n - 1)
+@lru_cache(maxsize=None)
 def k_n(n):
   assert n >= 2
   if n == 2: return 6
   return (2**(n-1)-2)*(2**n+2) + 2*j(n) + 2
 
 # position of (01)^(n-1)0
+@lru_cache(maxsize=None)
 def l(n):
   assert n >= 2
   if n == 2: return 2
@@ -183,17 +193,21 @@ def l(n):
   elif jn % 4 == 3: return (2**(n-1)+1)*(2**n + jn - 3)
   assert False # undefined for jn % 4 == 2
 
+@lru_cache(maxsize=None)
 def c(n, k):
   return f_pos(n, k//2) if k%2 == 0 else f_neg(n, (k-1)//2)
 
+@lru_cache(maxsize=None)
 def f_pos(n, k):
   k = k % (2**n + 2)
   return f(n, k-1) if 0 < k <= j(n) + 1 else f(n, k-2)
 
+@lru_cache(maxsize=None)
 def f_neg(n, k):
   k = k % (2**n - 2)
   return f(n, k+1) if 0 <= k < j(n) else f(n, k+2)
 
+@lru_cache(maxsize=None)
 def sum_f_2n(n, k):
   if k == 0: return 0
   jn,ln,kn = j(n), l(n), k_n(n)
@@ -206,12 +220,14 @@ def sum_f_2n(n, k):
     elif kn + 1 < k <= ln + 3:   return 1 + sum_c(n, k-2)
     elif ln + 3 < k <= 2**(2*n): return sum_c(n, k - 4)
 
+@lru_cache(maxsize=None)
 def sum_f_n_plus_1(n, k):
   if k == 0: return 0
   jn = j(n)
   if 0 < k <= jn or 2**n + jn < k <= 2**(n+1): return sum_sum_f_2n(n/2, k)
   elif jn < k <= 2**n + jn: return 1 + k + sum_sum_f_2n(n/2, k + delta(n))
 
+@lru_cache(maxsize=None)
 def sum_f(n, k):
   k = k % 2**n
   if k == 0: return 0
@@ -220,7 +236,8 @@ def sum_f(n, k):
 
   # f_2n
   if n%2 == 0:
-    r = sum_f_2n(n/2, k)
+    # r = sum_f_2n(n/2, k)
+    r = sum_f_2n(n//2, k)
     assert r != None
     return r
   else: # f_2n+1
@@ -228,12 +245,15 @@ def sum_f(n, k):
     assert r != None, "n = %d, k = %d" %(n, k)
     return r
 
+@lru_cache(maxsize=None)
 def sum_c(n, k):
   return sum_f_pos(n, int(math.ceil(k/2.0))) + sum_f_neg(n, k//2)
 
+@lru_cache(maxsize=None)
 def sum_sum_c(n, k):
   return sum_f_pos(n, k//2) if k % 2 == 0 else sum_f_neg(n, (k-1)//2)
 
+@lru_cache(maxsize=None)
 def sum_sum_f_2n(n, k):
   if k == 0: return 0
   jn, ln, kn = j(n), l(n), k_n(n)
@@ -249,22 +269,26 @@ def sum_sum_f_2n(n, k):
     if kn + 1 < k <= ln + 3:   return offset + 1 + k + sum_sum_c(n, k-2)
     if ln + 3 < k <= 2**(2*n): return offset + 1 + sum_sum_c(n, k-4)
 
+@lru_cache(maxsize=None)
 def sum_f_pos(n, k):
   offset = k//(2**n + 2)
   k = k % (2**n + 2)
   return offset + (k > 0) * (sum_f(n, k-1) if 0 < k <= j(n) + 1 else 1 + sum_f(n, k-2))
 
+@lru_cache(maxsize=None)
 def sum_f_neg(n, k):
   offset = k//(2**n - 2)
   k = k % (2**n -  2)
   return offset + (sum_f(n, k+1) if 0 <= k < j(n) else 1 + sum_f(n, k+2))
 
+@lru_cache(maxsize=None)
 def f_n_plus_1(n, k):
   assert n%2 == 0
   jn = j(n)
   if 0 < k <= jn or 2**n + jn < k <= 2**(n+1):  return sum_f(n, k)
   elif jn < k <= 2**n + jn: return 1 + sum_f(n, k + delta(n))
 
+@lru_cache(maxsize=None)
 def f_2n(n, k):
   jn, ln, kn = j(n), l(n), k_n(n)
   if jn % 4 < 3:
@@ -277,6 +301,7 @@ def f_2n(n, k):
     elif ln + 3 < k <= 2**(2*n): return c(n, k-4)
 
 # Access element of db
+@lru_cache(maxsize=None)
 def f(n, k):
   assert n >= 1
   if n == 1: return k % 2
@@ -291,6 +316,11 @@ def f(n, k):
     return f_n_plus_1(n-1, k) % 2
 
 def decode_db(n, u):
+  return decode_db_cached(n, tuple(u))
+
+@lru_cache(maxsize=None)
+def decode_db_cached(n, u):
+  # print("decode_db", n, u)
   assert n >= 1
   if n == 1: return u[0]
   if n == 2: return db2_tups[tuple(u)]
@@ -298,27 +328,40 @@ def decode_db(n, u):
   if n == 4: return db4_tups[tuple(u)]
 
   if n % 2 == 1: # -> n = m + 1
-    m = n - 1
-    p = decode_db(m, paired_xor(u))
+    m        = n - 1
+    pxu      = paired_xor(u)
+    p        = math.floor(decode_db(m, pxu)) # saulo
     d_m, j_m = delta(m), j(m)
-    k = p - d_m * (p >= j_m) + 2**m * (p == j_m) * (d_m == 1)
-    if f(n, k) == u[0]: return k
-    elif p < j_m:  return k + 2**m - d_m
-    elif p == j_m: return k + d_m
-    elif p > j_m:  return k + 2**m + d_m
+    k        = p - d_m * (p >= j_m) + 2**m * (p == j_m) * (d_m == 1)
+        
+    r = None
+    if   f(n, k) == u[0]: r = k
+    elif p < j_m:         r = k + 2**m - d_m
+    elif p == j_m:        r = k        + d_m
+    elif p > j_m:         r = k + 2**m + d_m
+
+    # print(f"decode_db n {n} u {u} m {m} p {p} pxu {pxu} d_m {d_m} j_m {j_m} k {k} r {r}")
+
+    return r
+
   else: # -> n = 2m
-    m = n//2
+    m   = n//2
     pos = lambda k: k + 1 + (k > j(m))
     neg = lambda k: k - 1 - (k > j(m))
     j2n, ln, kn = j(n), l(m), k_n(m)
-    if u == [0] * n: return 0
-    if u == [1] * n: return j2n
+    
+    # print(f"decode_db n {n} u {u} m {m} pos {pos} neg {neg} j2n {j2n} ln {ln} kn {kn}")
+
+    if u == [0  ] * n  : return 0
+    if u == [1  ] * n  : return j2n
     if u == [0,1] * (m): return ln + 1 + (kn < ln)
     if u == [1,0] * (m): return ln + 2 + (kn < ln)
-    alpha = [a for i,a in enumerate(u) if i % 2 == 0]
-    beta = [a for i,a in enumerate(u) if i % 2 == 1]
+    
+    alpha  = [a for i,a in enumerate(u) if i % 2 == 0]
+    beta   = [a for i,a in enumerate(u) if i % 2 == 1]
     k0, k1 = decode_db(m, alpha), decode_db(m, beta)
     k0_pos, k1_pos = pos(k0), pos(k1)
+    
     if alpha == [0]*m:
       (x,y) = isolve(2**m+2,2-2**m,neg(k1) - k0_pos + ((pos(k0) - pos(k1)) % 2 != 0))
       p = (2*(neg(k1) + y*(2**m - 2))) % (2**n-4)
@@ -337,62 +380,95 @@ def decode_db(n, u):
     else:
       (x,y) = isolve(2**m-2,-2**m-2,k1_pos - neg(k0) - 1)
       p = (2*(neg(k0) + x*(2**m - 2)) + 1) % (2**n-4)
+
+    # print(f"decode_db n {n} u {u} p {p} kn {kn} ln {ln}")
+
     return (p + 1 + (p >= kn) + 2*(p >= ln) )
 
 # www.math.utah.edu/~carlson/hsp2004/PythonShortCourse.pdf
 # uses a variation of Euclid's algorithm
+@lru_cache(maxsize=None)
 def isolve(a, b, c):
+  # print("isolve", a, b, c)
   q, r = divmod(a, b)
+  # print("isolve", a, b, c, q, r)
   if r == 0:
-    return (0, c/b)
+    return (0, c//b)
   else:
     u, v = isolve(b, r, c)
     return (v, u - q*v)
 
+@lru_cache(maxsize=None)
 def find_k_and_l(n):
+  # print("find_k_and_l", n)
   # solve diophantine eqn for 2^n = nk + (n+1)l
   # n >= 1, k,l >= 0
   a, b, c = n, n+1, 2**n
-  x, y = isolve(a, b, c)
+  x, y    = isolve(a, b, c)
   # find positive/zero values
-  t = 0 if x >= 0 and y >= 0 else 1 + (-x - 1)/b
+  t    = 0 if x >= 0 and y >= 0 else 1 + (-x - 1)//b
   k, l = x + t*b, y - t*a
-  assert k != 0 or l != 0
-  assert k >= 0 and l >= 0
-  assert a*k + b*l == c
+  assert k != 0 or  l != 0, f"k != 0 or l != 0 . k {k} l {l} a {a} b {b} c {c}"
+  assert k >= 0 and l >= 0, f"k >= 0 and l >= 0. k {k} l {l} a {a} b {b} c {c}"
+  assert a*k + b*l == c   , f"a*k + b*l == c   . k {k} l {l} a {a} b {b} c {c} a*k+b*l {a*k+b*l}"
   # might want to yield these later instead, and increase t until the
   # conditions above aren't met
+
+  # print(f"find_k_and_l n {n} a {a} b {b} c {c} x {x} y {y} t {t} k {k} l {l}")
+
   return (x + t*b, y - t*a)
+
+class Decoder():
+  def __init__(self, n, k=None, l=None):
+    self.n = n
+    self.k = k
+    self.l = l
+
+    if self.k is None or self.l is None:
+      self.k, self.l = find_k_and_l(self.n)
+
+    assert 2**self.n == self.n*self.k + (self.n+1)*self.l
+
+  def decode(self, w):
+    assert len(w) == self.n
+    
+    psiv = [psi(2,x) for x in w]
+    u = [v[0] for v in psiv]
+    v = [v[1] for v in psiv]
+    f = decode_db(self.n, u)
+
+    # print(f"make_decoder w {w} psiv {psiv} u {u} v {v}")
+    # print(f"make_decoder w {w} f {f}")    
+
+    g = decode_sdb(self.n, self.k, self.l, v, f)
+
+    return g*2**self.n + f
+
+  def __repr__(self):
+    return f"<DECODER:: n {self.n} k {self.k} l {self.l}>"
+
+  def __str__(self):
+    return self.__repr__()
+
+  def __call__(self, w):
+    return self.decode(w)
 
 # assumes c = 4 (alphabetsize), y = z = 2 (params for algorithm)
 def make_decoder(n, k=None, l=None):
-  if k is None or l is None:
-    k,l = find_k_and_l(n)
-
-  assert 2**n == n*k + (n+1)*l
-
-  def decode(w):
-    assert len(w) == n
-    u = [psi(2,x)[0] for x in w]
-    v = [psi(2,x)[1] for x in w]
-    f = decode_db(n, u)
-    g = decode_sdb(n, k, l, v, f)
-    return g*2**n + f
-
-  return decode
+  return Decoder(n, k=k, l=l)
 
 
 ## DE BRUIJN SEQUENCE GENERATORS ##
 
 # Trivial de Bruijn cycle for a window size of one (n = 1)
 def one_cycle(m = 2):
-  return it.cycle(xrange(m))
+  return it.cycle(range(m))
 
 # Knuth Vol 4A pg 302 (54): m-ary de Bruijn cycle with n=2
 def two_cycle(m = 2):
   while True:
-    for i in xrange(m):
-      for x in xrange(i):
+    for i in range(m):
+      for x in range(i):
         yield x
         yield i
       yield i

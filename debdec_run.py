@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import sys
 import os
 
@@ -8,15 +10,19 @@ def readfile(k, fhd):
     p = True
 
     d = get_db(k)
+    print(d)
 
-    table     = {base:idx for idx,base in enumerate("ACGT")}
-    table_inv = [c for c,i in sorted(table.items(), key=lambda x:x[1])]
+    table     = {base:idx for idx, base in enumerate("ACGT")}
+    table_inv = [c for c, i in sorted(table.items(), key=lambda x:x[1])]
 
-    for line in fhd:
+    for rownum, line in enumerate(fhd):
         i     = [table[c] for c in line.rstrip()]
         kmers = sliding_windows(i, k)
-        for kmer in kmers:
-            print(d(kmer), "".join([table_inv[i] for i in kmer]) if p else "")
+        print(f"{' '*18}{line.strip()}")
+        for knum, kmer in enumerate(kmers):
+            v   = d(kmer)
+            dna = "".join([table_inv[i] for i in kmer]) if p else ""
+            print(f"{rownum:5d} {knum:5d} {v:5d} {' '*knum}{dna}")
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:

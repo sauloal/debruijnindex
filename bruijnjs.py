@@ -5,7 +5,7 @@ import math
 from logger import *
 
 def join_list(lst, sep=" "):
-    return sep.join([str(x) for x in lst])
+    return sep.join(map(str,lst))
 
 
 def mod(n, m):
