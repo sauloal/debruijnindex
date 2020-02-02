@@ -95,11 +95,13 @@ function change(viewContainer, s, colorOrder) {
     L= new Array(n-2);
     K= new Array(n-1);
     s= decodableDeBruijn(c, n);
-    console.log("T= " + T);
+    
+    console.log("T= " + T + " [" + T.length + "]");
     for(var i= 0; i<L.length; i++) {
-      console.log("L[" + i + "]= " + L[i]);
-      console.log("K= " + K);
+      console.log("L[" + i + "]= " + L[i] + " [" + L[i].length + "]");
     }
+    console.log("K= " + K + " [" + K.length + "]");
+    console.log("s= " + s + " [" + s.length + "]");
   }
   
   function clearDecoderTest(viewContainer) {
@@ -139,16 +141,35 @@ function change(viewContainer, s, colorOrder) {
     
     testTable.appendChild(testRow);
     
+    console.log("testDecoder :: T= ", T);
+    console.log("testDecoder :: K= ", K);
+    console.log("testDecoder :: L= ", L);
+    console.log("testDecoder :: s= ", s);
+    console.log("testDecoder :: c= ", c);
+    console.log("testDecoder :: n= ", n);
+
+    var J = new Array();
+
     for(var i= 0; i<Math.pow(c, n); i++) {
       var w= new Array(n);
       var i_= i;
+      // console.log("testDecoder :: i= " + i + " i_= " + i_ + " w= " + w);
       for(j= n-1; j>=0; j--) {
-          w[j]= i_%c;
-          i_= Math.floor(i_/c);
+        v = i_%c;  
+        // console.log("testDecoder :: i= " + i + " i_= " + i_ + " w= " + w + " j= " + j + " v= " + v);
+        w[j]= v;
+        i_= Math.floor(i_/c);
       }
       var j_= findWord(s, w);
       var j= decodeDeBruijn(w, c);
       
+      // console.log("s= " + s);
+      // console.log("w= " + w);
+      // console.log("j_= " + j_);
+      // console.log("j= " + j);
+      // console.log("--");
+      J.push(j);
+
       testRow= document.createElement("tr");
   
       testCell= document.createElement("td");
@@ -180,6 +201,9 @@ function change(viewContainer, s, colorOrder) {
       testRow.appendChild(testCell);
       testTable.appendChild(testRow);
     }
+
+    console.log("J", J);
+
     viewContainer.appendChild(testTable);
   }
   

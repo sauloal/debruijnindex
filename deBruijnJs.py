@@ -7,7 +7,6 @@ from logger import *
 def join_list(lst, sep=" "):
     return sep.join(map(str,lst))
 
-
 def mod(n, m):
     n = n % m
     
@@ -87,41 +86,45 @@ def wordIndexOrig(w, c):
     return idx
 
 def findWord(s,w):
-    # print_debug(f"findWord :: s: {s} w: {w}")
+    # print_debug(f"findWord :: w: {w}\n\ts: {s}")
 
     ls = len(s)
     lw = len(w)
     s_ = s+s[0:lw]
     
-    # print_debug(f"findWord :: ls: {ls} lw: {lw} s_: {s_}")
+    # print_debug(f"findWord :: w: {w} ls: {ls} lw: {lw} s_: {s_} ({len(s_)})")
 
-    for k in range(ls - lw):
-        # print_debug(f"findWord :: k: {k} k+lw: {k+lw} s_[k:k+lw]: {s_[k:k+lw]} s_[k:k+lw] == w: {s_[k:k+lw] == w}")
+    k_ = -1
+    for k in range(ls):
+        # print_debug(f"findWord :: w: {w} ls: {ls} lw: {lw} k: {k} k+lw: {k+lw} s_[k:k+lw]: {s_[k:k+lw]} s_[k:k+lw] == w: {s_[k:k+lw] == w}")
         if s_[k:k+lw] == w:
             if k > len(s):
-                return -1
-            return k
+                k_ = -2
+            k_ = k
     
-    return -1
+    # print_debug(f"findWord :: s: {s} ls: {ls} lw: {lw} k_: {k_}")
+
+    return k_
 
 def findWordOrig(s, w):
-    # print_debug(f"findWord :: s: {s} w: {w}")
+    print_debug(f"findWord :: s: {s} w: {w}")
     
     n   = len(w)
     s_  = "".join([str(x) for x in s+s[0:n]])
     wi_ = 0
     k_  = 0
     
-    # print_debug(f"findWord :: s_: {s_}")
+    print_debug(f"findWord :: s: {s} w: {w} n: {n} s_: {s_} wi_: {wi_} k_: {k_}")
 
     # for(k= 0; k<s.length && wi!=n; k++):
     for k in range(len(w)):
+        print_debug(f"findWord :: s: {s} w: {w} n: {n} s_: {s_} wi_: {wi_} k_: {k_} k: {k}")
         # print_debug(f"findWord :: k: {k}")
         k_ = k
         if wi_ == n: break
         # for(wi= 0; wi<n && s_[k+wi]==w[wi]; wi++)
         for wi in range(n):
-            # print_debug(f"findWord :: k: {k} wi: {wi} k+wi: {k+wi}")
+            print_debug(f"findWord :: s: {s} w: {w} n: {n} s_: {s_} wi_: {wi_} k_: {k_} k: {k} wi: {wi}")
             wi_ = wi
             if s_[k+wi] == w[wi]: break
         
@@ -129,6 +132,8 @@ def findWordOrig(s, w):
 
     if k_ >= len(s):
         k_ = -1
+
+    print_debug(f"findWord :: s: {s} w: {w} n: {n} s_: {s_} wi_: {wi_} k_: {k_}")
 
     return k_
 
@@ -181,26 +186,26 @@ def operator_D(w, c):
     return dw
 
 def rho(c, p, e, s):
-    # print_debug(f"rho :: c: {c} p: {p} e: {e} s: {s}")
+    # print_debug(f"rho :: c: {c} p: {p} e: {e} s: {s} ({len(s)})")
 
-    s_ = s
-    s = s[0:p]
+    s_ = list(s)
+    s  = s[0:p]
     e_ = [None] * c
 
-    # print_debug(f"rho :: c: {c} p: {p} e: {e} s: {s} s_: {s_} e_: {e_}")
+    # print_debug(f"rho :: s: {s} ({len(s)})")
 
     for i in range(e, e+c):
         e_[i-e] = i % c
 
-    # print_debug(f"rho :: c: {c} p: {p} e: {e} s: {s} s_: {s_} e_: {e_}")
+    # print_debug(f"rho :: e: {e} ({len(e_)})")
 
     s += e_
 
-    # print_debug(f"rho :: c: {c} p: {p} e: {e} s: {s} s_: {s_} e_: {e_}")
+    # print_debug(f"rho :: s: {s} ({len(s)})")
 
-    s += [s_[p]]
+    s += s_[p:]
 
-    # print_debug(f"rho :: c: {c} p: {p} e: {e} s: {s} s_: {s_} e_: {e_}")
+    # print_debug(f"rho ::\n\tc: {c}\n\tp: {p}\n\te: {e}\n\ts: {s} ({len(s)})\n\ts_: {s_} ({len(s_)})\n\te_: {e_} ({len(e_)})")
 
     return s
 
@@ -236,7 +241,7 @@ class DeBruijn():
                 self.generate(t+1, t)
 
 def decodableDeBruijn(T, K, L, c, n):
-    # print_debug(f"decodableDeBruijn :: c: {c} n: {n} T: {join_list(T)} K: {join_list(K)} L: {join_list(L)}")
+    print_debug(f"decodableDeBruijn :: c: {c} n: {n}\n\tT: {join_list(T)}\n\tK: {join_list(K)}\n\tL: {join_list(L)}")
 
     if n <= 2:
         db = DeBruijn(c, 2)
@@ -273,7 +278,7 @@ def decodableDeBruijn(T, K, L, c, n):
         # print_debug(f"decodableDeBruijn :: c: {c} n: {n} e    : {e}")
         
         t = rho(c, p, e, s_hat)
-        # print_debug(f"decodableDeBruijn :: c: {c} n: {n} t    : {join_list(t)}")
+        # print_debug(f"decodableDeBruijn :: c: {c} n: {n} t    : {join_list(t)} [{len(t)}]")
 
         lidx = n-3 
         tidx = ((c ** n_)-1)
@@ -283,42 +288,22 @@ def decodableDeBruijn(T, K, L, c, n):
 
     K[n-2] = findOnes(t, n)
     
+    print_debug(f"decodableDeBruijn ::\n\tt: {t} ({len(t)})\n\tT: {T} ({len(T)})\n\tK: {K} ({len(K)})\n\tL: {L} ({len(L)})")
+
     return t, T, K, L
 
-def decodeDeBruijn(T, K, L, s, c, n):
-    print_log(f"decodeDeBruijn :: T: {join_list(T)} K {join_list(K)} L {join_list(L)} s {s} c {c} n {n}")
-
-    J = [None] * c ** n
-
-    for i in range(c ** n):
-        w  = [None] * n
-        i_ = i
-        print_debug(f"decodeDeBruijn :: i: {i}")
-        
-        for j in range(n-1, -1, -1):
-            print_debug(f"decodeDeBruijn :: i: {i} j: {j} w: {i_ % c}")
-            w[j] = i_ % c
-            i_   = math.floor(i_ / c)
-
-        # j_ = findWord(s, w)
-        d  = DeBruijnDecoder(T, K, L, w, c)
-        print_debug(f"decodeDeBruijn :: d: {d}")
-        J[i] = j
-
-    print_debug(f"decodeDeBruijn :: J: {J}")
-    
-    return J
-
 def DeBruijnDecoder(T, K, L, w, c):
-    print_debug(f"DeBruijnDecoder :: T {join_list(T)} K {join_list(K)} L {join_list(L)} w {w} c {c}")
+    # print_debug(f"DeBruijnDecoder :: w: {join_list(w)} c: {c}")
 
     r = 2
     n = len(w)
 
+    # print_debug(f"DeBruijnDecoder :: w: {join_list(w)} c: {c} r: {r} n: {n}")
+
     if (n==r):
         idx = wordIndex(w, c)
         v   = T[idx]
-        print_debug(f"DeBruijnDecoder :: r {r} n {n} idx {idx} v {v}")
+        # print_debug(f"DeBruijnDecoder :: w: {join_list(w)} c: {c} r: {r} n: {n} v: {v} idx: {idx}")
         return v
   
     v       = operator_D(w, c)
@@ -326,35 +311,63 @@ def DeBruijnDecoder(T, K, L, w, c):
     k       = K[i]
     p       = (c-1) * ((c ** (n-1)) - 1) + k
     allOnes = True
-    print_debug(f"DeBruijnDecoder :: r {r} n {n} v {v} i {i} k {k} p {p}")
 
     for i in range(n-1):
         if v[i] != 1:
             allOnes = False
     
+    # print_debug(f"DeBruijnDecoder :: w: {join_list(w)} c: {c} r: {r} n: {n} v: {v} i: {i} k: {k} p: {p} allOnes: {allOnes}")
+
     if allOnes:
         lv = L[n-1-r][k]
         e  = lv + ((c-1) ** 2)
         j  = p  + mod(w[0]-e, c)
-        print_debug(f"DeBruijnDecoder :: allOnes: true lv: {lv} e {e} j {j}")
+        # print_debug(f"DeBruijnDecoder :: w: {join_list(w)} c: {c} r: {r} n: {n} v: {v} lv: {lv} e: {e} j: {j} allOnes: true")
 
     else:
         f = DeBruijnDecoder(T, K, L, v, c)
 
-        print_debug(f"DeBruijnDecoder :: allOnes: false f: {f}")
-
         if (f>k):
             f -= 1
 
-        e = L[n-1-r][f]
-        j = f + ((c ** (n-1)) - 1) * mod(e-w[0], c)
+        lv= L[n-1-r][f]
+        e = lv
+        j = f + (((c ** (n-1)) - 1) * mod(e-w[0], c))
         
-        print_debug(f"DeBruijnDecoder :: allOnes: false f: {f} e: {e} j: {j}")
+        # print_debug(f"DeBruijnDecoder :: w: {join_list(w)} c: {c} r: {r} n: {n} v: {v} lv: {lv} e: {e} j: {j} allOnes: false f: {f}")
 
         if (j<0) or (j>p-1):
             j = j+c
 
+    # print_debug(f"DeBruijnDecoder :: w: {join_list(w)} c: {c} j: {j}")
+
     return j
+
+def decodeDeBruijn(T, K, L, s, c, n):
+    J = [None] * (c ** n)
+
+    print_log(f"decodeDeBruijn ::\n\tT: {join_list(T)} ({len(T)})\n\tK: {join_list(K)} ({len(K)})\n\tL: {L}\n\tJ: {join_list(J)} ({len(J)})\n\ts: {join_list(s)} ({len(s)})\n\tc: {c}\n\tn: {n}")
+
+    for i in range(c ** n):
+        w  = [None] * n
+        i_ = i
+        # print_debug(f"decodeDeBruijn :: i: {i} i_ {i_} w {w} ")
+        
+        for j in range(n-1, -1, -1):
+            v = i_ % c
+            # print_debug(f"decodeDeBruijn :: i: {i} i_ {i_} w {w} j: {j} v: {v}")
+            w[j] = v
+            i_   = math.floor(i_ / c)
+
+        j_ = findWord(s, w)
+        d  = DeBruijnDecoder(T, K, L, w, c)
+        # print_debug(f"decodeDeBruijn :: i: {i} i_ {i_} w {w} d: {d}")
+        assert j_==d, f"j_ == d. j_: {j_} d: {d}"
+        J[i] = d
+
+    # print_debug(f"decodeDeBruijn :: J: {J}")
+    
+    return J
 
 def encodeDeBruijn(voc, n):
     print_debug(f"encodeDeBruijn :: voc: {voc} n: {n}")
@@ -391,15 +404,18 @@ def test():
     assert L_[0] == L0      , f"{L_[0]} != {L0}, {L_}"
     assert c_    == len(voc), f"{c_}    != {len(voc)}"
 
-    print("T: ", join_list(T_))
-    print("K: ", join_list(K_))
-    print("L: ", join_list(L_[0]))
-    print("l: ", c_)
-    print("n: ", n)
+    print("test :: T: ", T_, "(", len(T_), ")")
+    print("test :: K: ", K_, "(", len(K_), ")")
+    print("test :: L: ", L_, "(", len(L_), ")")
+    for l in range(len(L_)):
+        print("test ::  L[",l,"]: ", L_[l], "(", len(L_[l]), ")")
+    print("test :: s: ", s_[0], "(", len(s_[0]), ")")
+    print("test :: l: ", c_)
+    print("test :: n: ", n)
 
-    J = decodeDeBruijn(T, K, L_[0], s_, c_, n)
+    J = decodeDeBruijn(T, K, L_, s_[0], c_, n)
 
-    print("J", j)
+    print(f"test :: J {J} ({len(J)})")
 
     print_info("all tests passed")
 
@@ -408,156 +424,3 @@ if __name__ == '__main__':
     voc =     sys.argv[1]
     n   = int(sys.argv[2])
     main(voc, n)
-
-
-
-
-
-
-"""
-function testDecoder(viewContainer) {
-    clearDecoderTest(viewContainer);
-    
-    testTable = document.createElement("table");
-    var testRow;
-    var testCell;
-    var testStr;
-    testRow= document.createElement("tr");
-    
-    testCell= document.createElement("th");
-    testCell.appendChild(document.createTextNode("No"));
-    testRow.appendChild(testCell);
-    
-    testCell= document.createElement("th");
-    testCell.appendChild(document.createTextNode("Pattern"));
-    testRow.appendChild(testCell);
-    
-    testCell= document.createElement("th");
-    testCell.appendChild(document.createTextNode("Found at"));
-    testRow.appendChild(testCell);
-    
-    testCell= document.createElement("th");
-    testCell.appendChild(document.createTextNode("Decoded at"));
-    testRow.appendChild(testCell);
-    
-    testCell= document.createElement("th");
-    testCell.appendChild(document.createTextNode("Correct"));
-    testRow.appendChild(testCell);
-    
-    testTable.appendChild(testRow);
-    
-    for(var i= 0; i<Math.pow(c, n); i++) {
-      var w= new Array(n);
-      var i_= i;
-      for(j= n-1; j>=0; j--) {
-          w[j]= i_%c;
-          i_= Math.floor(i_/c);
-      }
-      var j_= findWord(s, w);
-      var j= decodeDeBruijn(w, c);
-      
-      testRow= document.createElement("tr");
-  
-      testCell= document.createElement("td");
-      testCell.style.textAlign= "center";
-      testCell.appendChild(document.createTextNode(i));
-      testRow.appendChild(testCell);
-      testCell= document.createElement("td");
-      testCell.style.textAlign= "center";
-      // testCell.appendChild(document.createTextNode(w));
-      change(testCell, w);
-      testRow.appendChild(testCell);
-      testCell= document.createElement("td");
-      testCell.style.textAlign= "center";
-      testCell.appendChild(document.createTextNode(j_));
-      testRow.appendChild(testCell);
-      testCell= document.createElement("td");
-      testCell.style.textAlign= "center";
-      testCell.appendChild(document.createTextNode(j));
-      testRow.appendChild(testCell);
-      testCell= document.createElement("td");
-      testCell.style.textAlign= "center";
-      if(j==j_) {
-        testCell.style.color= "green";
-        testCell.appendChild(document.createTextNode("\u2714"));
-      } else {
-        testCell.style.color= "red";
-        testCell.appendChild(document.createTextNode("\u2718"));
-      }
-      testRow.appendChild(testCell);
-      testTable.appendChild(testRow);
-    }
-    viewContainer.appendChild(testTable);
-  }
-  
-  function displayDecoderData(viewContainer, numberContainer) {
-    var data= viewContainer.getElementsByTagName("code");
-    while(data.length>0)
-      viewContainer.removeChild(data[0]);
-  
-    data = document.createElement("code");
-    var lenL= 0;
-    for(var i= 0; i<L.length; i++) {
-      data.appendChild(document.createTextNode("L[" + i + "]= {" + L[i] + "};\n"));
-      lenL+= L[i].length;
-    }
-    data.appendChild(document.createTextNode("K= {" + K + "};\n"));
-    data.appendChild(document.createTextNode("T= {" + T + "};"));
-    
-    viewContainer.appendChild(data);
-    var dataBitsT= Math.log(Math.pow(c, 2))/Math.log(2) * T.length;
-    var dataBitsK= Math.log(Math.pow(c, n))/Math.log(2) * K.length;
-    var dataBitsL= Math.log(c)/Math.log(2) * lenL;
-    
-    numberContainer.replaceChild(document.createTextNode(dataBitsT+dataBitsK+dataBitsL), numberContainer.firstChild);
-  }
-  
-  function displayCDecoderData(viewContainer, numberContainer) {
-    var data= viewContainer.getElementsByTagName("code");
-    while(data.length>0)
-      viewContainer.removeChild(data[0]);
-  
-    data = document.createElement("code");
-  
-    data.appendChild(document.createTextNode("#define N " + n + "\n"));
-    data.appendChild(document.createTextNode("#define C " + c + "\n"));
-    data.appendChild(document.createTextNode("#define powC_2 " + ((c-1)*(c-1)) + "\n"));
-  
-    var powC_N= Array();
-    for(var i= 2; i<=n; i++)
-      powC_N[i-2]= (c-1)*(Math.pow(c, i) - 1);
-    data.appendChild(document.createTextNode("const uint32_t powC_N[]= {" + powC_N + "};\n"));
-    data.appendChild(document.createTextNode("const uint8_t L[]= {" + L + "};\n"));
-    var idxL= Array();
-    idxL[0]= 0;
-    for(var i= 1; i<L.length; i++)
-      idxL[i]= idxL[i-1] + L[i-1].length;
-    data.appendChild(document.createTextNode("const uint16_t idxL[]= {" + idxL + "};\n"));
-    data.appendChild(document.createTextNode("const uint8_t T[]= {" + T + "};\n"));
-  
-    var w= new Array(n);
-    var locBD= new Array(Math.pow(c, n));
-    for(var i= 0; i<Math.pow(c, n); i++) {
-      var i_= i;
-      for(j= n-1; j>=0; j--) {
-      w[j]= i_%c;
-      i_= Math.floor(i_/c);
-      locBD[i]= decodeDeBruijn(w, c);
-      }
-    }
-    data.appendChild(document.createTextNode("const uint32_t locDB[]= {" + locBD + "};\n"));
-    
-    viewContainer.appendChild(data);
-    
-  
-    var lenL= 0;
-    for(var i= 0; i<L.length; i++) {
-      lenL+= L[i].length;
-    }  
-    var dataBitsT= Math.log(Math.pow(c, 2))/Math.log(2) * T.length;
-    var dataBitsK= Math.log(Math.pow(c, n))/Math.log(2) * K.length;
-    var dataBitsL= Math.log(c)/Math.log(2) * lenL;
-    
-    numberContainer.replaceChild(document.createTextNode(dataBitsT+dataBitsK+dataBitsL), numberContainer.firstChild);
-  }
-  """
