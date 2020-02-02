@@ -1,9 +1,13 @@
+import sys
+
 LOG_LEVEL_DEBUG   = 0
 LOG_LEVEL_LOG     = 2
 LOG_LEVEL_INFO    = 4
 LOG_LEVEL_WARNING = 6
 LOG_LEVEL_ERROR   = 8
-LOG_LEVEL_DEFAULT = LOG_LEVEL_DEBUG
+
+LOG_LEVEL_DEFAULT = LOG_LEVEL_INFO
+LOG_LEVEL_DEFAULT_VERBOSITY = LOG_LEVEL_INFO
 
 LOG_LEVEL = [
     "DEBUG  ", # 0
@@ -43,17 +47,23 @@ sysprint = print
 
 def print(*args, **kwargs):
     level = LOG_LEVEL_DEFAULT
+    verbosity = LOG_LEVEL_DEFAULT_VERBOSITY
     
     if "level" in kwargs:
         level = kwargs["level"]
         del kwargs["level"]
 
+    if "verbosity" in kwargs:
+        verbosity = kwargs["verbosity"]
+        del kwargs["verbosity"]
+
     if level >= 6:
         if "file" not in kwargs:
             kwargs["file"] = sys.stderr
 
-    msg = [LOG_COLORS[level], LOG_LEVEL[level], ": ", LOG_COLOR_ENDC] + list(args) + [LOG_COLOR_ENDC]
-    sysprint(*msg, **kwargs)
+    if verbosity <= level:
+        msg = [LOG_COLORS[level], LOG_LEVEL[level], ": ", LOG_COLOR_ENDC] + list(args) + [LOG_COLOR_ENDC]
+        sysprint(*msg, **kwargs)
 
 
 def print_debug(*args, **kwargs):
