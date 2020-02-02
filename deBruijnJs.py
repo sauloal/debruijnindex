@@ -436,19 +436,23 @@ def test():
 
     print_info(f"test :: J {J} ({len(J)})")
 
-    for kpos in range(len(sstr)-n+1):
-        kmer = sstr[kpos:kpos+n]
+    sstr_c = sstr + sstr[:n-1] # circular
+    keys = {}
+    for kpos in range(len(sstr)):
+        kmer = sstr_c[kpos:kpos+n]
         karr = [voc.index(p) for p in kmer]
         d    = DeBruijnDecoder(T, K, L, karr, c)
         print(kpos, kmer, karr, d)
+        keys[kmer] = d
 
     for st in range(len(voc)):
         for nd in range(len(voc)):
             for rd in range(len(voc)):
                 kmer = voc[st] + voc[nd] + voc[rd]
-                kid  = 2**2*st + 2**1*nd + 2**0*rd
+                kid  = 4**2*st + 4**1*nd + 4**0*rd
                 karr = [st, nd, rd]
                 d    = DeBruijnDecoder(T, K, L, karr, c)
+                assert keys[kmer] == d
                 print(kmer, kid, d)
 
     print_info("all tests passed")
