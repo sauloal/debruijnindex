@@ -442,6 +442,15 @@ def test():
         d    = DeBruijnDecoder(T, K, L, karr, c)
         print(kpos, kmer, karr, d)
 
+    for st in range(len(voc)):
+        for nd in range(len(voc)):
+            for rd in range(len(voc)):
+                kmer = voc[st] + voc[nd] + voc[rd]
+                kid  = 2**2*st + 2**1*nd + 2**0*rd
+                karr = [st, nd, rd]
+                d    = DeBruijnDecoder(T, K, L, karr, c)
+                print(kmer, kid, d)
+
     print_info("all tests passed")
 
 
