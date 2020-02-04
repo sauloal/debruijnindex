@@ -8,239 +8,239 @@ from logger import *
 from deBruijnJsTools import *
 
 class DeBruijn():
-    def __init__(self, c, n):
-        self.c = c
-        self.n = n
-        self.a = [0 for j in range(c*n)]
-        self.s = []
+    def __init__(self, vocab_size, kmer_size):
+        self.vocab_size = vocab_size
+        self.kmer_size  = kmer_size
+        self.a          = [0 for j in range(vocab_size*kmer_size)]
+        self.dbsequence = []
 
-        print_log(f"DeBruijn :: c: {c} n: {n} a: {join_list(self.a)} s: {join_list(self.s)}")
+        print_log(f"DeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size} a: {join_list(self.a)} dbsequence: {join_list(self.dbsequence)}")
         
         self.generate(1, 1)
 
-        print_log(f"DeBruijn :: c: {c} n: {n} a: {join_list(self.a)} s: {join_list(self.s)}")
+        print_log(f"DeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size} a: {join_list(self.a)} dbsequence: {join_list(self.dbsequence)}")
 
     def generate(self, t, p):
-        print_debug(f"DeBruijn :: generate :: t: {t} p: {p} c: {self.c} n: {self.n}")
+        print_debug(f"DeBruijn :: generate :: t: {t} p: {p} c: {self.vocab_size} kmer_size: {self.kmer_size}")
         
-        if t > self.n:
-            if (self.n%p) == 0:
+        if t > self.kmer_size:
+            if (self.kmer_size % p) == 0:
                 for j in range(p):
-                    self.s.append(self.a[j+1])
-                    print_debug(f"DeBruijn :: generate :: t: {t} p: {p} c: {self.c} n: {self.n} j: 0 a: {join_list(self.a)} s: {join_list(self.s)}")
+                    self.dbsequence.append(self.a[j+1])
+                    print_debug(f"DeBruijn :: generate :: t: {t} p: {p} vocab_size: {self.vocab_size} kmer_size: {self.kmer_size} j: 0 a: {join_list(self.a)} dbsequence: {join_list(self.dbsequence)}")
 
         else:
             self.a[t] = self.a[t-p]
             self.generate(t+1, p)
 
-            for j in range(self.a[t-p]+1, self.c):
-                print_debug(f"DeBruijn :: generate :: t: {t} p: {p} c: {self.c} n: {self.n} j: {j} a: {join_list(self.a)} s: {join_list(self.s)}")
+            for j in range(self.a[t-p]+1, self.vocab_size):
+                print_debug(f"DeBruijn :: generate :: t: {t} p: {p} vocab_size: {self.vocab_size} kmer_size: {self.kmer_size} j: {j} a: {join_list(self.a)} dbsequence: {join_list(self.dbsequence)}")
                 self.a[t] = j
                 self.generate(t+1, t)
 
-def genDecodableDeBruijn(T, K, L, c, n):
-    print_debug(f"genDecodableDeBruijn :: c: {c} n: {n}\n\tT: {join_list(T)}\n\tK: {join_list(K)}\n\tL: {join_list(L)}")
+def genDecodableDeBruijn(T, K, L, vocab_size, kmer_size):
+    print_debug(f"genDecodableDeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size}\n\tT: {join_list(T)}\n\tK: {join_list(K)}\n\tL: {join_list(L)}")
 
-    if n <= 2:
-        db = DeBruijn(c, 2)
-        t  = db.s
-        # t_ = "".join([str(x) for x in t[0:2]])
-        t_ = t + t[0:2]
+    if kmer_size <= 2:
+        db          = DeBruijn(vocab_size, 2)
+        dbsequence  = db.dbsequence
+        dbsequence_ = dbsequence + dbsequence[0:2]
 
-        print_debug(f"genDecodableDeBruijn :: c: {c} n: {n} t: {join_list(t)} t_: {join_list(t_)}")
+        print_debug(f"genDecodableDeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size} dbsequence: {join_list(dbsequence)} dbsequence_: {join_list(dbsequence_)}")
         
-        for i in range(c ** 2):
-            k   = t_[i:i+2]
-            idx = wordIndex(k, c)
-            print_debug(f"genDecodableDeBruijn :: c: {c} n: {n} t: {join_list(t)} t_: {join_list(t_)} i: {i} k: {k} idx: {idx}")
-            T[idx] = i
+        for i in range(vocab_size ** 2):
+            word         = dbsequence_[i:i+2]
+            decoded_char = wordIndex(word, vocab_size)
+            print_debug(f"genDecodableDeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size} dbsequence: {join_list(dbsequence)} dbsequence_: {join_list(dbsequence_)} i: {i} word: {word} decoded_char: {decoded_char}")
+            T[decoded_char] = i
 
     else:
-        n_      = n-1
-        _,_,_,s = genDecodableDeBruijn(T, K, L, c, n_)
-        print_debug(f"genDecodableDeBruijn :: c: {c} n: {n} s    : {join_list(s)}")
+        kmer_size_ = kmer_size-1
+        _,_,_,dbsequence_    = genDecodableDeBruijn(T, K, L, vocab_size, kmer_size_)
+        print_debug(f"genDecodableDeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size} dbsequence_: {join_list(dbsequence_)}")
         
-        k = findOnes(s, n_)
-        print_debug(f"genDecodableDeBruijn :: c: {c} n: {n} k    : {k}")
+        ones_pos     = findOnes(dbsequence_, kmer_size_)
+        print_debug(f"genDecodableDeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size} ones_pos: {ones_pos}")
         
-        s_    = s[0:k] + s[k+1:]
-        print_debug(f"genDecodableDeBruijn :: c: {c} n: {n} k    : {k} s_   : {join_list(s_)} [{len(s_)}]")
+        dbsequence__ = dbsequence_[0:ones_pos] + dbsequence_[ones_pos+1:]
+        print_debug(f"genDecodableDeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size} ones_pos: {ones_pos} dbsequence__: {join_list(dbsequence__)} [{len(dbsequence__)}]")
 
-        s_hat = operator_D_inv(s_, 0, c)
-        print_debug(f"genDecodableDeBruijn :: c: {c} n: {n} k    : {k} s_hat: {join_list(s_hat)}  [{len(s_hat)}]")
+        dbsequence__hat = operator_D_inv(dbsequence__, 0, vocab_size)
+        print_debug(f"genDecodableDeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size} ones_pos: {ones_pos} dbsequence__hat: {join_list(dbsequence__hat)}  [{len(dbsequence__hat)}]")
 
-        p = (c-1) * ((c ** n_) - 1) + k
-        print_debug(f"genDecodableDeBruijn :: c: {c} n: {n} p    : {p}")
+        dbs_pos = (vocab_size-1) * ((vocab_size ** kmer_size_) - 1) + ones_pos
+        print_debug(f"genDecodableDeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size} dbs_pos: {dbs_pos}")
         
-        e = s_hat[p]
-        print_debug(f"genDecodableDeBruijn :: c: {c} n: {n} e    : {e}")
+        dbs_val = dbsequence__hat[dbs_pos]
+        print_debug(f"genDecodableDeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size} dbs_val: {dbs_val}")
         
-        t = rho(c, p, e, s_hat)
-        print_debug(f"genDecodableDeBruijn :: c: {c} n: {n} t    : {join_list(t)} [{len(t)}]")
+        dbsequence = rho(vocab_size, dbs_pos, dbs_val, dbsequence__hat)
+        print_debug(f"genDecodableDeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size} dbsequence: {join_list(dbsequence)} [{len(dbsequence)}]")
 
-        lidx = n-3 
-        tidx = ((c ** n_)-1)
-        print_debug(f"genDecodableDeBruijn :: c: {c} n: {n} lidx : {lidx}")
-        print_debug(f"genDecodableDeBruijn :: c: {c} n: {n} tidx : {tidx}")
-        L[lidx] = t[0:tidx]
+        lidx = kmer_size - 3 
+        tidx = ((vocab_size ** kmer_size_)-1)
+        print_debug(f"genDecodableDeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size} lidx : {lidx}")
+        print_debug(f"genDecodableDeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size} tidx : {tidx}")
+        
+        L[lidx] = dbsequence[0:tidx]
 
-    K[n-2] = findOnes(t, n)
+    K[kmer_size-2] = findOnes(dbsequence, kmer_size)
     
-    print_debug(f"genDecodableDeBruijn ::\n\tt: {t} ({len(t)})\n\tT: {T} ({len(T)})\n\tK: {K} ({len(K)})\n\tL: {L} ({len(L)})")
+    print_debug(f"genDecodableDeBruijn ::\n\tdbsequence: {dbsequence} ({len(dbsequence)})\n\tT: {T} ({len(T)})\n\tK: {K} ({len(K)})\n\tL: {L} ({len(L)})")
 
-    return T, K, L, t
+    return T, K, L, dbsequence
 
-def createBruijnDecoder(T, K, L, w, c):
-    print_debug(f"createBruijnDecoder :: w: {join_list(w)} c: {c}")
+def vocabToDeBruijn(vocab, kmer_size):
+    print_debug(f"vocabToDeBruijn :: vocab: {vocab} kmer_size: {kmer_size}")
 
-    r = 2
-    n = len(w)
+    vocab_size = len(vocab)
+    T          = [None] * (vocab_size ** 2)
+    K          = [None] * (kmer_size-1)
+    L          = [None] * (kmer_size-2)
 
-    print_debug(f"createBruijnDecoder :: w: {join_list(w)} c: {c} r: {r} n: {n}")
+    print_debug(f"vocabToDeBruijn :: vocab: {vocab} vocab_size: {vocab_size} kmer_size: {kmer_size} T: {join_list(T)} K: {join_list(K)} L: {join_list(L)}")
 
-    if (n==r):
-        idx = wordIndex(w, c)
-        v   = T[idx]
-        print_debug(f"createBruijnDecoder :: w: {join_list(w)} c: {c} r: {r} n: {n} v: {v} idx: {idx}")
-        return v
+    T, K, L, dbsequence = genDecodableDeBruijn(T, K, L, vocab_size, kmer_size)
+
+    print_debug(f"vocabToDeBruijn :: vocab: {vocab} vocab_size: {vocab_size} kmer_size: {kmer_size} T: {join_list(T)} K: {join_list(K)} L: {join_list(L)} dbsequence: {join_list(dbsequence)}")
+
+    return T, K, L, dbsequence, vocab_size
+
+
+def decodeDeBruijnWord(T, K, L, vocab_size, word):
+    print_debug(f"decodeDeBruijnWord :: word: {join_list(word)} vocab_size: {vocab_size}")
+
+    word_min_size = 2
+    kmer_size     = len(word)
+
+    print_debug(f"decodeDeBruijnWord :: word: {join_list(word)} vocab_size: {vocab_size} word_min_size: {word_min_size} kmer_size: {kmer_size}")
+
+    if (kmer_size == word_min_size):
+        decoded_char  = wordIndex(word, vocab_size)
+        decoded_char_ = T[decoded_char]
+        print_debug(f"decodeDeBruijnWord :: word: {join_list(word)} vocab_size: {vocab_size} word_min_size: {word_min_size} kmer_size: {kmer_size} decoded_char_: {decoded_char_} decoded_char: {decoded_char}")
+        return decoded_char_
   
-    v       = operator_D(w, c)
-    i       = n-1-r
+    word_D  = operator_D(word, vocab_size)
+    i       = kmer_size-word_min_size-1
     k       = K[i]
-    p       = (c-1) * ((c ** (n-1)) - 1) + k
+    p       = (vocab_size-1) * ((vocab_size ** (kmer_size-1)) - 1) + k
     allOnes = True
 
-    for i in range(n-1):
-        if v[i] != 1:
+    for i in range(kmer_size-1):
+        if word_D[i] != 1:
             allOnes = False
     
-    print_debug(f"createBruijnDecoder :: w: {join_list(w)} c: {c} r: {r} n: {n} v: {v} i: {i} k: {k} p: {p} allOnes: {allOnes}")
+    print_debug(f"decodeDeBruijnWord :: word: {join_list(word)} vocab_size: {vocab_size} word_min_size: {word_min_size} kmer_size: {kmer_size} word_D: {word_D} i: {i} k: {k} p: {p} allOnes: {allOnes}")
 
     if allOnes:
-        lv = L[n-1-r][k]
-        e  = lv + ((c-1) ** 2)
-        j  = p  + mod(w[0]-e, c)
-        print_debug(f"createBruijnDecoder :: w: {join_list(w)} c: {c} r: {r} n: {n} v: {v} lv: {lv} e: {e} j: {j} allOnes: true")
+        lv           = L[kmer_size-word_min_size-1][k]
+        e            = lv + ((vocab_size-1) ** 2)
+        decoded_char = p  + mod(word[0]-e, vocab_size)
+        print_debug(f"decodeDeBruijnWord :: word: {join_list(word)} vocab_size: {vocab_size} word_min_size: {word_min_size} kmer_size: {kmer_size} word_D: {word_D} lv: {lv} e: {e} decoded_char: {decoded_char} allOnes: true")
 
     else:
-        f = createBruijnDecoder(T, K, L, v, c)
+        decoded_char_ = decodeDeBruijnWord(T, K, L, vocab_size, word_D)
 
-        if (f>k):
-            f -= 1
+        if (decoded_char_>k):
+            decoded_char_ -= 1
 
-        lv= L[n-1-r][f]
-        e = lv
-        j = f + (((c ** (n-1)) - 1) * mod(e-w[0], c))
+        lv           = L[kmer_size-word_min_size-1][decoded_char_]
+        e            = lv
+        decoded_char = decoded_char_ + (((vocab_size ** (kmer_size-1)) - 1) * mod(e-word[0], vocab_size))
         
-        print_debug(f"createBruijnDecoder :: w: {join_list(w)} c: {c} r: {r} n: {n} v: {v} lv: {lv} e: {e} j: {j} allOnes: false f: {f}")
+        print_debug(f"decodeDeBruijnWord :: word: {join_list(word)} vocab_size: {vocab_size} word_min_size: {word_min_size} kmer_size: {kmer_size} word_D: {word_D} lv: {lv} e: {e} decoded_char: {decoded_char} allOnes: false decoded_char_: {decoded_char_}")
 
-        if (j<0) or (j>p-1):
-            j = j+c
+        if (decoded_char<0) or (decoded_char>p-1):
+            decoded_char = decoded_char + vocab_size
 
-    print_debug(f"createBruijnDecoder :: w: {join_list(w)} c: {c} j: {j}")
+    print_debug(f"decodeDeBruijnWord :: word: {join_list(word)} vocab_size: {vocab_size} decoded_char: {decoded_char}")
 
-    return j
+    return decoded_char
 
-def vocabToDeBruijn(vocab, n):
-    print_debug(f"vocabToDeBruijn :: vocab: {vocab} n: {n}")
+def genDeBruijnDecodeMatrix(T, K, L, dbsequence, vocab_size, kmer_size):
+    matrix_size   = (vocab_size ** kmer_size)
+    decode_matrix = [None] * matrix_size
 
-    c = len(vocab)
-    T = [None] * (c ** 2)
-    K = [None] * (n-1)
-    L = [None] * (n-2)
+    print_log(f"genDeBruijnDecodeMatrix ::\n\tT: {join_list(T)} ({len(T)})\n\tK: {join_list(K)} ({len(K)})\n\tL: {L}\n\tJ: {join_list(decode_matrix)} ({len(decode_matrix)})\n\tdbsequence: {join_list(dbsequence)} ({len(dbsequence)})\n\tvocab_size: {vocab_size}\n\tkmer_size: {kmer_size}")
 
-    print_debug(f"vocabToDeBruijn :: vocab: {vocab} c: {c} n: {n} T: {join_list(T)} K: {join_list(K)} L: {join_list(L)}")
-
-    T, K, L, t = genDecodableDeBruijn(T, K, L, c, n)
-
-    print_debug(f"vocabToDeBruijn :: vocab: {vocab} c: {c} n: {n} T: {join_list(T)} K: {join_list(K)} L: {join_list(L)} t: {join_list(t)}")
-
-    return T, K, L, t, c
-
-def decodeDeBruijn(T, K, L, s, c, n):
-    J = [None] * (c ** n)
-
-    print_log(f"decodeDeBruijn ::\n\tT: {join_list(T)} ({len(T)})\n\tK: {join_list(K)} ({len(K)})\n\tL: {L}\n\tJ: {join_list(J)} ({len(J)})\n\ts: {join_list(s)} ({len(s)})\n\tc: {c}\n\tn: {n}")
-
-    for i in range(c ** n):
-        w  = [None] * n
-        i_ = i
-        print_debug(f"decodeDeBruijn :: i: {i} i_ {i_} w {w} ")
+    for matrix_pos in range(matrix_size):
+        word        = [None] * kmer_size
+        matrix_pos_ = matrix_pos
+        print_debug(f"genDeBruijnDecodeMatrix :: matrix_pos: {matrix_pos} matrix_pos_ {matrix_pos_} word {word} ")
         
-        for j in range(n-1, -1, -1):
-            v = i_ % c
-            print_debug(f"decodeDeBruijn :: i: {i} i_ {i_} w {w} j: {j} v: {v}")
-            w[j] = v
-            i_   = math.floor(i_ / c)
+        for kmer_pos in range(kmer_size-1, -1, -1):
+            pos_frame      = matrix_pos_ % vocab_size
+            word[kmer_pos] = pos_frame
+            matrix_pos_    = math.floor(matrix_pos_ / vocab_size)
+            print_debug(f"genDeBruijnDecodeMatrix :: matrix_pos: {matrix_pos} matrix_pos_ {matrix_pos_} word {word} kmer_pos: {kmer_pos} pos_frame: {pos_frame}")
 
-        j_ = findWord(s, w)
-        d  = createBruijnDecoder(T, K, L, w, c)
-        print_debug(f"decodeDeBruijn :: i: {i} i_ {i_} w {w} d: {d}")
-        assert j_==d, f"j_ == d. j_: {j_} d: {d}"
-        J[i] = d
+        decoded_char_ = findWord(dbsequence, word)
+        decoded_char  = decodeDeBruijnWord(T, K, L, vocab_size, word)
+        print_debug(f"genDeBruijnDecodeMatrix :: matrix_pos: {matrix_pos} matrix_pos_ {matrix_pos_} word {word} decoded_char: {decoded_char}")
+        assert decoded_char_==decoded_char, f"decoded_char_ == decoded_char. decoded_char_: {decoded_char_} decoded_char: {decoded_char}"
+        decode_matrix[matrix_pos] = decoded_char
 
-    print_debug(f"decodeDeBruijn :: J: {J}")
+    print_debug(f"genDeBruijnDecodeMatrix :: decode_matrix: {decode_matrix}")
     
-    return J
+    return decode_matrix
 
-def main(vocab, n):
-    test()
+def main(vocab, kmer_size):
+    T, K, L, dbsequence, vocab_size = vocabToDeBruijn(vocab, kmer_size)
+    decode_matrix                   = genDeBruijnDecodeMatrix(T, K, L, dbsequence, vocab_size, kmer_size)
+    dbsequence_str                  = "".join([vocab[l] for l in dbsequence])
 
-    T, K, L, t, c = vocabToDeBruijn(vocab, n)
-    J             = decodeDeBruijn(T, K, L, t, c, n)
-    sstr          = "".join([vocab[l] for l in t])
-
-    print_info(f" Vocabulary: {vocab} ({len(vocab)})")
-    print_info(f" T: {T} ({len(T)})")
-    print_info(f" K: {K} ({len(K)})")
-    print_info(f" L: {L} ({len(L)})")
+    print_info(f" vocabulary    : {vocab} ({len(vocab)})")
+    print_info(f" T             : {T} ({len(T)})")
+    print_info(f" K             : {K} ({len(K)})")
+    print_info(f" L             : {L} ({len(L)})")
     for l in range(len(L)):
-        print_info(f"  L[{l}]: {L[l]} ({len(L[l])})")
-    print_info(f" t: {t} ({len(t)})")
-    print_info(f" t: {sstr}")
-    print_info(f" l: {c}")
-    print_info(f" n: {n}")
-    print_info(f" J: {J} ({len(J)})")
+        print_info(f"   L[{l}]        : {L[l]} ({len(L[l])})")
+    print_info(f" dbsequence    : {dbsequence} ({len(dbsequence)})")
+    print_info(f" dbsequence_str: {dbsequence_str}")
+    print_info(f" vocab_size    : {vocab_size}")
+    print_info(f" kmer_size     : {kmer_size}")
+    print_info(f" decode_matrix : {decode_matrix} ({len(decode_matrix)})")
 
 def test():
-    vocab = "ACGT"
-    n     = 3
-    c_    = len(vocab)
-    L_    = [[0,0,0,1,1,3,3,2,3,1,2,1,3,1,0]]
-    K_    = [7,45]
-    T_    = [0,2,4,15,1,7,9,6,3,8,12,11,5,10,13,14]
-    t_    = [0,0,0,1,1,3,3,2,3,1,2,1,3,1,0,3,3,3,0,0,2,2,1,2,0,1,0,2,0,3,2,2,2,3,3,1,1,0,1,3,0,3,1,3,2,1,1,1,2,2,0,0,3,0,1,2,3,0,2,3,2,0,2,1]
+    vocab       = "ACGT"
+    kmer_size   = 3
+    vocab_size_ = len(vocab)
+    L_          = [[0,0,0,1,1,3,3,2,3,1,2,1,3,1,0]]
+    K_          = [7,45]
+    T_          = [0,2,4,15,1,7,9,6,3,8,12,11,5,10,13,14]
+    dbsequence_ = [0,0,0,1,1,3,3,2,3,1,2,1,3,1,0,3,3,3,0,0,2,2,1,2,0,1,0,2,0,3,2,2,2,3,3,1,1,0,1,3,0,3,1,3,2,1,1,1,2,2,0,0,3,0,1,2,3,0,2,3,2,0,2,1]
 
-    T, K, L, t, c = vocabToDeBruijn(vocab, n)
+    T, K, L, dbsequence, vocab_size = vocabToDeBruijn(vocab, kmer_size)
 
-    assert c_ == c, f"{c_} != {c}"
-    assert t_ == t, f"{L_} != {L}"
+    assert vocab_size_ == vocab_size, f"{vocab_size_} != {vocab_size}"
     assert T_ == T, f"{T_} != {T}"
     assert K_ == K, f"{K_} != {K}"
     assert L_ == L, f"{L_} != {L}"
+    assert dbsequence_ == dbsequence, f"{L_} != {L}"
 
-    sstr = "".join([vocab[l] for l in t])
+    dbsequence_str = "".join([vocab[l] for l in dbsequence])
 
-    print_info(f"test :: T: {T} ({len(T)})")
-    print_info(f"test :: K: {K} ({len(K)})")
-    print_info(f"test :: L: {L} ({len(L)})")
+    print_info(f"test :: T             : {T} ({len(T)})")
+    print_info(f"test :: K             : {K} ({len(K)})")
+    print_info(f"test :: L             : {L} ({len(L)})")
     for l in range(len(L)):
-        print_info(f"test ::  L[{l}]: {L[l]} ({len(L[l])})")
-    print_info(f"test :: t: {t} ({len(t)})")
-    print_info(f"test :: t: {sstr}")
-    print_info(f"test :: l: {c}")
-    print_info(f"test :: n: {n}")
+        print_info(f"test ::  L[{l}]         : {L[l]} ({len(L[l])})")
+    print_info(f"test :: dbsequence    : {dbsequence} ({len(dbsequence)})")
+    print_info(f"test :: dbsequence_str: {dbsequence_str}")
+    print_info(f"test :: vocab_size    : {vocab_size}")
+    print_info(f"test :: kmer_size     : {kmer_size}")
 
-    J = decodeDeBruijn(T, K, L, t, c, n)
+    decode_matrix = genDeBruijnDecodeMatrix(T, K, L, dbsequence, vocab_size, kmer_size)
 
-    print_info(f"test :: J {J} ({len(J)})")
+    print_info(f"test :: decode_matrix : {decode_matrix} ({len(decode_matrix)})")
 
-    sstr_c = sstr + sstr[:n-1] # circular
-    keys = {}
-    for kpos in range(len(sstr)):
-        kmer = sstr_c[kpos:kpos+n]
+    dbsequence_str_circ = dbsequence_str + dbsequence_str[:kmer_size-1] # circular
+    keys   = {}
+    for kpos in range(len(dbsequence_str)):
+        kmer = dbsequence_str_circ[kpos:kpos+kmer_size]
         karr = [vocab.index(p) for p in kmer]
-        d    = createBruijnDecoder(T, K, L, karr, c)
+        d    = decodeDeBruijnWord(T, K, L, vocab_size, karr)
         print(kpos, kmer, karr, d)
         keys[kmer] = d
 
@@ -251,7 +251,7 @@ def test():
                 kmer = vocab[st] + vocab[nd] + vocab[rd]
                 kid  = 4**2*st + 4**1*nd + 4**0*rd
                 karr = [st, nd, rd]
-                d    = createBruijnDecoder(T, K, L, karr, c)
+                d    = decodeDeBruijnWord(T, K, L, vocab_size, karr)
                 assert keys[kmer] == d
                 print(kmer, kid, d)
 
@@ -259,6 +259,8 @@ def test():
 
 
 if __name__ == '__main__':
+    test()
+
     vocab     =     sys.argv[1]
     kmer_size = int(sys.argv[2])
     main(vocab, kmer_size)
