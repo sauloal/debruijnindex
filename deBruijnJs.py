@@ -9,33 +9,33 @@ from deBruijnJsTools import *
 
 class DeBruijn():
     def __init__(self, vocab_size, kmer_size):
-        self.vocab_size = vocab_size
-        self.kmer_size  = kmer_size
-        self.a          = [0 for j in range(vocab_size*kmer_size)]
-        self.dbsequence = []
+        self.vocab_size   = vocab_size
+        self.kmer_size    = kmer_size
+        self.vocab_matrix = [0 for j in range(vocab_size*kmer_size)]
+        self.dbsequence   = []
 
-        print_log(f"DeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size} a: {join_list(self.a)} dbsequence: {join_list(self.dbsequence)}")
+        print_log(f"DeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size} vocab_matrix: {join_list(self.vocab_matrix)} dbsequence: {join_list(self.dbsequence)}")
         
         self.generate(1, 1)
 
-        print_log(f"DeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size} a: {join_list(self.a)} dbsequence: {join_list(self.dbsequence)}")
+        print_log(f"DeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size} vocab_matrix: {join_list(self.vocab_matrix)} dbsequence: {join_list(self.dbsequence)}")
 
     def generate(self, t, p):
         print_debug(f"DeBruijn :: generate :: t: {t} p: {p} c: {self.vocab_size} kmer_size: {self.kmer_size}")
         
         if t > self.kmer_size:
             if (self.kmer_size % p) == 0:
-                for j in range(p):
-                    self.dbsequence.append(self.a[j+1])
-                    print_debug(f"DeBruijn :: generate :: t: {t} p: {p} vocab_size: {self.vocab_size} kmer_size: {self.kmer_size} j: 0 a: {join_list(self.a)} dbsequence: {join_list(self.dbsequence)}")
+                for frame in range(p):
+                    self.dbsequence.append(self.vocab_matrix[j+1])
+                    print_debug(f"DeBruijn :: generate :: t: {t} p: {p} vocab_size: {self.vocab_size} kmer_size: {self.kmer_size} frame: 0 vocab_matrix: {join_list(self.vocab_matrix)} dbsequence: {join_list(self.dbsequence)}")
 
         else:
-            self.a[t] = self.a[t-p]
+            self.vocab_matrix[t] = self.vocab_matrix[t-p]
             self.generate(t+1, p)
 
-            for j in range(self.a[t-p]+1, self.vocab_size):
-                print_debug(f"DeBruijn :: generate :: t: {t} p: {p} vocab_size: {self.vocab_size} kmer_size: {self.kmer_size} j: {j} a: {join_list(self.a)} dbsequence: {join_list(self.dbsequence)}")
-                self.a[t] = j
+            for frame in range(self.vocab_matrix[t-p]+1, self.vocab_size):
+                print_debug(f"DeBruijn :: generate :: t: {t} p: {p} vocab_size: {self.vocab_size} kmer_size: {self.kmer_size} frame: {frame} vocab_matrix: {join_list(self.vocab_matrix)} dbsequence: {join_list(self.dbsequence)}")
+                self.vocab_matrix[t] = frame
                 self.generate(t+1, t)
 
 def genDecodableDeBruijn(T, K, L, vocab_size, kmer_size):
