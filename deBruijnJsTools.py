@@ -82,27 +82,38 @@ def wordIndexOrig(w, c):
 
     return idx
 
-def findWord(s,w):
-    # print_debug(f"findWord :: w: {w}\n\ts: {s}")
+def findWord(dbsequence, word, dbsequence_=None, dbstr_=None):
+    # print_debug(f"findWord :: word: {word}\n\ts: {s}")
 
-    ls = len(s)
-    lw = len(w)
-    s_ = s+s[0:lw]
+    len_seq     = len(dbsequence)
+    len_word    = len(word)
+    if dbsequence_ is None:
+        dbsequence_ = dbsequence + dbsequence[:len_word]
     
-    # print_debug(f"findWord :: w: {w} ls: {ls} lw: {lw} s_: {s_} ({len(s_)})")
+    if dbstr_ is None:
+        dbstr_ = "".join([str(s) for s in dbsequence_])
+    wordstr_ = "".join([str(s) for s in word])
+    dbstr_idx = dbstr_.find(wordstr_)
+    if dbstr_idx != -1:
+        if dbstr_idx > len_seq:
+            dbstr_idx = -1
+        return dbstr_idx
+    # print_debug(f"findWord :: word: {word} len_seq: {len_seq} len_word: {len_word} dbsequence_: {dbsequence_} ({len(dbsequence_)})")
+    print("long")
 
-    k_ = -1
-    for k in range(ls):
-        # print_debug(f"findWord :: w: {w} ls: {ls} lw: {lw} k: {k} k+lw: {k+lw} s_[k:k+lw]: {s_[k:k+lw]} s_[k:k+lw] == w: {s_[k:k+lw] == w}")
-        if s_[k:k+lw] == w:
-            if k > len(s):
-                k_ = -2
-            k_ = k
+    seq_pos_ = -1
+    for seq_pos in range(len_seq):
+        # print_debug(f"findWord :: word: {word} len_seq: {len_seq} len_word: {len_word} seq_pos: {seq_pos} k+len_word: {seq_pos+len_word} dbsequence_[seq_pos:seq_pos+len_word]: {dbsequence_[seq_pos:seq_pos+len_word]} dbsequence_[seq_pos:seq_pos+len_word] == word: {dbsequence_[seq_pos:seq_pos+len_word] == word}")
+        if dbsequence_[seq_pos:seq_pos+len_word] == word:
+            seq_pos_ = seq_pos
             break
     
-    # print_debug(f"findWord :: s: {s} ls: {ls} lw: {lw} k_: {k_}")
+    if seq_pos > len_seq:
+        seq_pos_ = -1
+    
+    # print_debug(f"findWord :: dbsequence: {dbsequence} len_seq: {len_seq} len_word: {len_word} seq_pos_: {seq_pos_}")
 
-    return k_
+    return seq_pos_
 
 def findWordOrig(s, w):
     # print_debug(f"findWord :: s: {s} w: {w}")

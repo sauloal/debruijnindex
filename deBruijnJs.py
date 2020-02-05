@@ -12,13 +12,17 @@ real    12m18.553s
 user    11m49.953s
 sys     00m21.078s
 
-real    4m55.889s
-user    4m53.109s
-sys     0m02.125s
+real    0m0.581s
+user    0m0.484s
+sys     0m0.094s
 
-real    0m0.164s
-user    0m0.078s
-sys     0m0.063s
+4_9
+real    1m43.954s
+user    1m43.766s
+sys     0m0.125s
+
+4_11
+
 
 """
 
@@ -205,6 +209,7 @@ def decodeDeBruijnWord(T, K, L, vocab_size, word):
 def genDeBruijnDecodeMatrix(dbsequence, vocab_size, kmer_size):
     db_file       = f"{vocab_size}_{kmer_size}.matrix.json"
     matrix_size   = (vocab_size ** kmer_size)
+    print("matrix size: ", matrix_size)
 
     if os.path.exists(db_file):
         print(f"reading matrix {db_file}")
@@ -223,10 +228,13 @@ def genDeBruijnDecodeMatrix(dbsequence, vocab_size, kmer_size):
 
         decode_matrix = [None] * matrix_size
 
-        print_log(f"genDeBruijnDecodeMatrix ::\n\tJ: {join_list(decode_matrix)} ({len(decode_matrix)})\n\tdbsequence: {join_list(dbsequence)} ({len(dbsequence)})\n\tvocab_size: {vocab_size}\n\tkmer_size: {kmer_size}")
+        # print_log(f"genDeBruijnDecodeMatrix ::\n\tJ: {join_list(decode_matrix)} ({len(decode_matrix)})\n\tdbsequence: {join_list(dbsequence)} ({len(dbsequence)})\n\tvocab_size: {vocab_size}\n\tkmer_size: {kmer_size}")
+
+        dbsequence_ = dbsequence + dbsequence[:kmer_size]
+        dbstr_      = "".join([str(s) for s in dbsequence_])
+        word        = [None] * kmer_size
 
         for matrix_pos in range(matrix_size):
-            word        = [None] * kmer_size
             matrix_pos_ = matrix_pos
             # print_debug(f"genDeBruijnDecodeMatrix :: matrix_pos: {matrix_pos} matrix_pos_ {matrix_pos_} word {word} ")
             
@@ -236,7 +244,7 @@ def genDeBruijnDecodeMatrix(dbsequence, vocab_size, kmer_size):
                 matrix_pos_    = math.floor(matrix_pos_ / vocab_size)
                 # print_debug(f"genDeBruijnDecodeMatrix :: matrix_pos: {matrix_pos} matrix_pos_ {matrix_pos_} word {word} kmer_pos: {kmer_pos} pos_frame: {pos_frame}")
 
-            decoded_char_ = findWord(dbsequence, word)
+            decoded_char_ = findWord(dbsequence, word, dbsequence_=dbsequence_, dbstr_=dbstr_)
             # decoded_char  = decodeDeBruijnWord(T, K, L, vocab_size, word)
             # # print_debug(f"genDeBruijnDecodeMatrix :: matrix_pos: {matrix_pos} matrix_pos_ {matrix_pos_} word {word} decoded_char: {decoded_char}")
             # assert decoded_char_ == decoded_char, f"decoded_char_ == decoded_char. decoded_char_: {decoded_char_} decoded_char: {decoded_char}"
