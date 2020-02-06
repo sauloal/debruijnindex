@@ -91,6 +91,7 @@ def findWord(dbsequence, word, dbsequence_=None, dbstr_=None):
         dbsequence_ = dbsequence + dbsequence[:len_word]
     
     if dbstr_ is None:
+        print("recreating db string")
         dbstr_ = "".join([str(s) for s in dbsequence_])
     wordstr_ = "".join([str(s) for s in word])
     dbstr_idx = dbstr_.find(wordstr_)

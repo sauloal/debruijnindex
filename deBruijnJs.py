@@ -22,6 +22,9 @@ user    1m43.766s
 sys     0m0.125s
 
 4_11
+real    476m56.538s 7.9h
+user    476m02.203s
+sys       0m04.109s
 
 
 """
@@ -230,8 +233,11 @@ def genDeBruijnDecodeMatrix(dbsequence, vocab_size, kmer_size):
 
         # print_log(f"genDeBruijnDecodeMatrix ::\n\tJ: {join_list(decode_matrix)} ({len(decode_matrix)})\n\tdbsequence: {join_list(dbsequence)} ({len(dbsequence)})\n\tvocab_size: {vocab_size}\n\tkmer_size: {kmer_size}")
 
-        dbsequence_ = dbsequence + dbsequence[:kmer_size]
-        dbstr_      = "".join([str(s) for s in dbsequence_])
+        dbsequence_ = None
+        dbstr_      = None
+        if vocab_size < 10:
+            dbsequence_ = dbsequence + dbsequence[:kmer_size]
+            dbstr_      = "".join([str(s) for s in dbsequence_])
         word        = [None] * kmer_size
 
         for matrix_pos in range(matrix_size):
@@ -249,6 +255,8 @@ def genDeBruijnDecodeMatrix(dbsequence, vocab_size, kmer_size):
             # # print_debug(f"genDeBruijnDecodeMatrix :: matrix_pos: {matrix_pos} matrix_pos_ {matrix_pos_} word {word} decoded_char: {decoded_char}")
             # assert decoded_char_ == decoded_char, f"decoded_char_ == decoded_char. decoded_char_: {decoded_char_} decoded_char: {decoded_char}"
             decode_matrix[matrix_pos] = decoded_char_
+
+        print("matrix generated. saving")
 
         with open(db_file, 'w') as fhd:
             print(f" saving matrix to {db_file}")
@@ -282,7 +290,7 @@ def main(vocab, kmer_size):
     print_info(f" K             : {K_} ({len(K)})")
     print_info(f" L             : ({len(L)})")
     for l in range(len(L)):
-        print_info(f"   L[{l}]        : {L_[l]} ({len(L[l])})")
+        print_info(f"   L[{l:2d}]       : {L_[l]} ({len(L[l])})")
     print_info(f" dbsequence    : {dbsequence_} ({len(dbsequence)})")
     print_info(f" dbsequence_str: {dbsequence_str_}")
     print_info(f" vocab_size    : {vocab_size}")
@@ -317,7 +325,7 @@ def test():
     print_info(f"test :: K             : {K} ({len(K)})")
     print_info(f"test :: L             : {L} ({len(L)})")
     for l in range(len(L)):
-        print_info(f"test ::  L[{l}]         : {L[l]} ({len(L[l])})")
+        print_info(f"test ::  L[{l:2d}]        : {L[l]} ({len(L[l])})")
     print_info(f"test :: dbsequence    : {dbsequence} ({len(dbsequence)})")
     print_info(f"test :: dbsequence_str: {dbsequence_str}")
     print_info(f"test :: vocab_size    : {vocab_size}")
