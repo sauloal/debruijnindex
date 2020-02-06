@@ -34,11 +34,11 @@ from logger import *
 from deBruijnJsTools import *
 
 def toJson(data, db_file, indent=1):
-    with gzip.open(db_file, mode='wb') as fhd:
+    with gzip.open(db_file, mode='wt') as fhd:
         json.dump(data, fhd)
 
 def fromJson(db_file):
-    with gzip.open(db_file, mode='rb') as fhd:
+    with gzip.open(db_file, mode='rt') as fhd:
         data = json.load(fhd)
     return data
 
@@ -220,6 +220,7 @@ def decodeDeBruijnWord(T, K, L, vocab_size, word):
 def genDeBruijnDecodeMatrix(dbsequence, vocab_size, kmer_size):
     db_file       = f"{vocab_size}_{kmer_size}.matrix.json.gz"
     matrix_size   = (vocab_size ** kmer_size)
+    floor         = math.floor
     print("matrix size: ", matrix_size)
 
     if os.path.exists(db_file):
@@ -253,7 +254,7 @@ def genDeBruijnDecodeMatrix(dbsequence, vocab_size, kmer_size):
             for kmer_pos in range(kmer_size-1, -1, -1):
                 pos_frame      = matrix_pos_ % vocab_size
                 word[kmer_pos] = pos_frame
-                matrix_pos_    = math.floor(matrix_pos_ / vocab_size)
+                matrix_pos_    = floor(matrix_pos_ / vocab_size)
                 # print_debug(f"genDeBruijnDecodeMatrix :: matrix_pos: {matrix_pos} matrix_pos_ {matrix_pos_} word {word} kmer_pos: {kmer_pos} pos_frame: {pos_frame}")
 
             decoded_char_ = findWord(dbsequence, word, dbsequence_=dbsequence_, dbstr_=dbstr_)
@@ -277,7 +278,7 @@ def main(vocab, kmer_size):
     dbsequence_str                  = "".join([vocab[l] for l in dbsequence])
 
     seqfile = f"{vocab}_{kmer_size}.seq.gz"
-    with gzip.open(seqfile, 'wb') as fhd:
+    with gzip.open(seqfile, 'wt') as fhd:
         print(f" saving sequence to {seqfile}")
         fhd.write(dbsequence_str)
 
