@@ -2,6 +2,7 @@ import sys
 import os
 import math
 import json
+import gzip
 
 # https://jgeisler0303.github.io/deBruijnDecode/#decoderTest
 
@@ -31,6 +32,15 @@ sys       0m04.109s
 
 from logger import *
 from deBruijnJsTools import *
+
+def toJson(data, db_file, indent=1):
+    with gzip.open(db_file, mode='wb') as fhd:
+        json.dump(data, fhd)
+
+def fromJson(db_file):
+    with gzip.open(db_file, mode='rb') as fhd:
+        data = json.load(fhd)
+    return data
 
 class DeBruijn():
     def __init__(self, vocab_size, kmer_size):
@@ -120,20 +130,19 @@ def vocabToDeBruijn(vocab, kmer_size):
 
     vocab_size = len(vocab)
 
-    db_file    = f"{vocab_size}_{kmer_size}.vars.json"
+    db_file    = f"{vocab_size}_{kmer_size}.vars.json.gz"
 
     if os.path.exists(db_file):
         print(f"reading vars")
-        with open(db_file, 'r') as fhd:
-            print(f" reading vars from {db_file}")
-            T, K, L, len_t, len_k, len_l, len_dbsequence, vocab_size_, kmer_size_, dbsequence = json.load(fhd)
-            assert vocab_size == vocab_size_
-            assert kmer_size  == kmer_size_
-            assert len_t == len(T)
-            assert len_k == len(K)
-            assert len_l == len(L)
-            assert len_dbsequence == len(dbsequence)
-            return T, K, L, vocab_size, dbsequence
+        print(f" reading vars from {db_file}")
+        T, K, L, len_t, len_k, len_l, len_dbsequence, vocab_size_, kmer_size_, dbsequence = fromJson(db_file)
+        assert vocab_size == vocab_size_
+        assert kmer_size  == kmer_size_
+        assert len_t == len(T)
+        assert len_k == len(K)
+        assert len_l == len(L)
+        assert len_dbsequence == len(dbsequence)
+        return T, K, L, vocab_size, dbsequence
 
     else:
         print(f"generating vars")
@@ -148,9 +157,8 @@ def vocabToDeBruijn(vocab, kmer_size):
 
         # print_debug(f"vocabToDeBruijn :: vocab: {vocab} vocab_size: {vocab_size} kmer_size: {kmer_size} T: {join_list(T)} K: {join_list(K)} L: {join_list(L)} dbsequence: {join_list(dbsequence)}")
 
-        with open(db_file, 'w') as fhd:
-            print(f" saving vars to {db_file}")
-            json.dump([T, K, L, len(T), len(K), len(L), len(dbsequence), vocab_size, kmer_size, dbsequence], fhd, indent=1)
+        print(f" saving vars to {db_file}")
+        toJson([T, K, L, len(T), len(K), len(L), len(dbsequence), vocab_size, kmer_size, dbsequence], db_file, indent=1)
 
         return T, K, L, vocab_size, dbsequence
 
@@ -210,21 +218,19 @@ def decodeDeBruijnWord(T, K, L, vocab_size, word):
     return decoded_char
 
 def genDeBruijnDecodeMatrix(dbsequence, vocab_size, kmer_size):
-    db_file       = f"{vocab_size}_{kmer_size}.matrix.json"
+    db_file       = f"{vocab_size}_{kmer_size}.matrix.json.gz"
     matrix_size   = (vocab_size ** kmer_size)
     print("matrix size: ", matrix_size)
 
     if os.path.exists(db_file):
-        print(f"reading matrix {db_file}")
-
-        with open(db_file, 'r') as fhd:
-            print(f" reading matrix from {db_file}")
-            decode_matrix, matrix_size_, vocab_size_, kmer_size_ = json.load(fhd)
-            assert vocab_size  == vocab_size_
-            assert kmer_size   == kmer_size_
-            assert matrix_size == matrix_size_
-            assert matrix_size == len(decode_matrix)
-            return decode_matrix
+        print(f"reading matrix")
+        print(f" reading matrix from {db_file}")
+        decode_matrix, matrix_size_, vocab_size_, kmer_size_ = fromJson(db_file)
+        assert vocab_size  == vocab_size_
+        assert kmer_size   == kmer_size_
+        assert matrix_size == matrix_size_
+        assert matrix_size == len(decode_matrix)
+        return decode_matrix
 
     else:
         print(f"generating matrix")
@@ -258,9 +264,8 @@ def genDeBruijnDecodeMatrix(dbsequence, vocab_size, kmer_size):
 
         print("matrix generated. saving")
 
-        with open(db_file, 'w') as fhd:
-            print(f" saving matrix to {db_file}")
-            json.dump([decode_matrix, matrix_size, vocab_size, kmer_size], fhd, indent=0)
+        print(f" saving matrix to {db_file}")
+        toJson([decode_matrix, matrix_size, vocab_size, kmer_size], db_file, indent=0)
 
     # print_debug(f"genDeBruijnDecodeMatrix :: decode_matrix: {decode_matrix}")
     
@@ -271,8 +276,8 @@ def main(vocab, kmer_size):
     T, K, L, vocab_size, dbsequence = vocabToDeBruijn(vocab, kmer_size)
     dbsequence_str                  = "".join([vocab[l] for l in dbsequence])
 
-    seqfile = f"{vocab}_{kmer_size}.seq"
-    with open(seqfile, 'w') as fhd:
+    seqfile = f"{vocab}_{kmer_size}.seq.gz"
+    with gzip.open(seqfile, 'wb') as fhd:
         print(f" saving sequence to {seqfile}")
         fhd.write(dbsequence_str)
 
