@@ -87,20 +87,26 @@ def findWord(dbsequence, word, dbsequence_=None, dbstr_=None):
 
     len_seq     = len(dbsequence)
     len_word    = len(word)
-    if dbsequence_ is None:
+
+    if dbstr_ is None and dbsequence_ is None:
         dbsequence_ = dbsequence + dbsequence[:len_word]
     
     if dbstr_ is None:
-        print("recreating db string")
+        # print("recreating db string")
         dbstr_ = "".join([str(s) for s in dbsequence_])
-    wordstr_ = "".join([str(s) for s in word])
+
+    wordstr_  = "".join([str(s) for s in word])
     dbstr_idx = dbstr_.find(wordstr_)
     if dbstr_idx != -1:
         if dbstr_idx > len_seq:
             dbstr_idx = -1
         return dbstr_idx
+    
     # print_debug(f"findWord :: word: {word} len_seq: {len_seq} len_word: {len_word} dbsequence_: {dbsequence_} ({len(dbsequence_)})")
     print("long")
+
+    if dbsequence_ is None:
+        dbsequence_ = dbsequence + dbsequence[:len_word]
 
     seq_pos_ = -1
     for seq_pos in range(len_seq):
@@ -147,13 +153,13 @@ def findWordOrig(s, w):
 
     return k_
 
-def findOnes(s, n):
+def findOnes(s, n, dbsequence_=None, dbstr_=None):
     w = [None]*n
 
     for i in range(n):
         w[i] = 1
     
-    return findWord(s, w)
+    return findWord(s, w, dbsequence_=dbsequence_, dbstr_=dbstr_)
 
 def operator_D_inv(s, b, c):
     # print_debug(f"operator_D_inv :: s: {join_list(s)} b: {b} c: {c}")
