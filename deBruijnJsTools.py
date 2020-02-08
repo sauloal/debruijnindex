@@ -1,5 +1,12 @@
-from logger import *
+import os
+
+import json
 import math
+import gzip
+
+import numpy as np
+
+from logger import *
 
 def join_list(lst, sep=" "):
     return sep.join(map(str,lst))
@@ -224,3 +231,51 @@ def rho(c, p, e, s):
     # print_debug(f"rho ::\n\tc: {c}\n\tp: {p}\n\te: {e}\n\ts: {s} ({len(s)})\n\ts_: {s_} ({len(s_)})\n\te_: {e_} ({len(e_)})")
 
     return s
+
+
+
+
+
+
+
+
+
+def toJson(data, db_file, indent=1):
+    with gzip.open(db_file, mode='wt') as fhd:
+        json.dump(data, fhd)
+
+def fromJson(db_file):
+    with gzip.open(db_file, mode='rt') as fhd:
+        data = json.load(fhd)
+    return data
+
+def openNpArray(filename, shape):
+    print(f"openNpArray         :: filename {filename} shape {shape}")
+    assert os.path.exists(filename), f"file {filename} does not exists. cannot open"
+    a = np.memmap(filename, dtype='int64', mode='r+', shape=shape)
+    return a
+
+def createNpArray(filename, shape):
+    print(f"createNpArray       :: filename {filename} shape {shape}")
+    assert not os.path.exists(filename), f"file {filename} exists. cannot create"
+    a = np.memmap(filename, dtype='int64', mode='w+', shape=shape)
+    return a
+
+def openOrCreateNpArray(filename, shape):
+    print(f"openOrCreateNp1DArray :: filename {filename} shape {shape}")
+    if os.path.exists(filename):
+        return True , openNp1DArray(filename, shape)
+    else:
+        return False, createNp1DArray(filename, shape)
+
+def openNp1DArray(filename, shape):
+    print(f"openNp1DArray         :: filename {filename} shape {shape}")
+    return openNpArray(filename, (shape,))
+
+def createNp1DArray(filename, shape):
+    print(f"createNp1DArray       :: filename {filename} shape {shape}")
+    return createNpArray(filename, (shape,))
+
+def openOrCreateNp1DArray(filename, shape):
+    print(f"openOrCreateNp1DArray :: filename {filename} shape {shape}")
+    return openOrCreateNpArray(filename, (shape,))

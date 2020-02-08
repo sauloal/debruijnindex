@@ -1,8 +1,6 @@
 import sys
 import os
 import math
-import json
-import gzip
 
 # https://jgeisler0303.github.io/deBruijnDecode/#decoderTest
 
@@ -11,33 +9,7 @@ from deBruijnJsTools import *
 
 import numpy as np
 
-def toJson(data, db_file, indent=1):
-    with gzip.open(db_file, mode='wt') as fhd:
-        json.dump(data, fhd)
 
-def fromJson(db_file):
-    with gzip.open(db_file, mode='rt') as fhd:
-        data = json.load(fhd)
-    return data
-
-def openNp1DArray(filename, shape):
-    print(f"openNp1DArray         :: filename {filename} shape {shape}")
-    assert os.path.exists(filename), f"file {filename} does not exists. cannot open"
-    a = np.memmap(filename, dtype='int64', mode='r+', shape=(shape,))
-    return a
-
-def createNp1DArray(filename, shape):
-    print(f"createNp1DArray       :: filename {filename} shape {shape}")
-    assert not os.path.exists(filename), f"file {filename} exists. cannot create"
-    a = np.memmap(filename, dtype='int64', mode='w+', shape=(shape,))
-    return a
-
-def openOrCreateNp1DArray(filename, shape):
-    print(f"openOrCreateNp1DArray :: filename {filename} shape {shape}")
-    if os.path.exists(filename):
-        return True , openNp1DArray(filename, shape)
-    else:
-        return False, createNp1DArray(filename, shape)
 
 
 class DeBruijn():
@@ -148,11 +120,14 @@ def genDecodableDeBruijn(T, K, L, vocab_size, kmer_size, t_exists=False, k_exist
             dbs_val = dbsequence__hat[dbs_pos]
             # print_debug(f"genDecodableDeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size} dbs_val: {dbs_val}")
             
-            dbsequence = rho(vocab_size, dbs_pos, dbs_val, dbsequence__hat)
-            d_exists, dbsequence_a = openOrCreateNp1DArray(seqf, len(dbsequence))
+            dbsequence             = rho(vocab_size, dbs_pos, dbs_val, dbsequence__hat)
+            ldb                    = len(dbsequence)
+            d_exists, dbsequence_a = openOrCreateNp1DArray(seqf, ldb)
             dbsequence_a[:] = dbsequence[:]
             dbsequence_a.flush()
-            d_exists, dbsequence = openOrCreateNp1DArray(seqf, len(dbsequence))
+            del dbsequence_a
+            del dbsequence
+            d_exists, dbsequence = openOrCreateNp1DArray(seqf, ldb)
             # print_debug(f"genDecodableDeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size} dbsequence: {join_list(dbsequence)} [{len(dbsequence)}]")
 
             # print_debug(f"genDecodableDeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size} lidx : {lidx}")
@@ -162,12 +137,30 @@ def genDecodableDeBruijn(T, K, L, vocab_size, kmer_size, t_exists=False, k_exist
             L[lidx].flush()
 
     if not k_exists:
+        # seq_w_f = f"{sys.argv[0]}.D.{vocab_size}_{kmer_size}.rowling.np"
+        # lw      = len(dbsequence)
+        # d_exists, dbsequence_a = openOrCreateNp1DArray(seq_w_f, (lw, kmer_size))
+        # if not d_exists:
+        #     pass
+
         dbstr_ = "".join([str(s) for s in dbsequence]) + "".join([str(s) for s in dbsequence[:kmer_size]])
         K[kmer_size-2] = findOnes(dbsequence, kmer_size, dbstr_=dbstr_)
     
     # print_debug(f"genDecodableDeBruijn ::\n\tdbsequence: {dbsequence} ({len(dbsequence)})\n\tT: {T} ({len(T)})\n\tK: {K} ({len(K)})\n\tL: {L} ({len(L)})")
 
     return T, K, L, dbsequence
+
+def rolling_window(a, window):
+    # https://rigtorp.se/2011/01/01/rolling-statistics-numpy.html
+    # https://www.reddit.com/r/learnpython/comments/2xqlwj/using_npwhere_to_find_subarrays/
+    shape = a.shape[:-1] + (a.shape[-1] - window + 1, window)
+    strides = a.strides + (a.strides[-1],)
+    return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)
+
+def findFirst_numpy(a, b):
+    temp = rolling_window(a, len(b))
+    result = np.where(np.all(temp == b, axis=1))
+    return result[0][0] if result else None
 
 def vocabToDeBruijn(vocab, kmer_size):
     # print_debug(f"vocabToDeBruijn :: vocab: {vocab} kmer_size: {kmer_size}")
@@ -364,12 +357,25 @@ def main(vocab, kmer_size):
     print("main", vocab, kmer_size)
 
     T, K, L, vocab_size, dbsequence = vocabToDeBruijn(vocab, kmer_size)
-    dbsequence_str                  = "".join([vocab[l] for l in dbsequence])
 
     seqfile = f"{vocab}_{kmer_size:02d}.seq.gz"
+    # dbsequence_str                  = "".join([vocab[l] for l in dbsequence])
+    frag_size = 1000000
     with gzip.open(seqfile, 'wt') as fhd:
-        print(f" saving sequence to {seqfile}")
-        fhd.write(dbsequence_str)
+        print(f" saving sequence to {seqfile} - {len(dbsequence):12,d}")
+        if len(dbsequence) <= frag_size:
+            fhd.write("".join([vocab[l] for l in dbsequence]))
+        else:
+            sum_frags = 0
+            for start_pos in range(0, len(dbsequence), frag_size):
+                end_pos = start_pos + frag_size
+                if end_pos > len(dbsequence):
+                    end_pos = len(dbsequence)
+                frag = "".join([vocab[l] for l in dbsequence[start_pos:end_pos]])
+                print(f"  saving from {start_pos:12,d} to {end_pos:12,d} - {len(frag):12,d} / {len(dbsequence):12,d}")
+                fhd.write(frag)
+                sum_frags += len(frag)
+            assert sum_frags == len(dbsequence), f"sum_frags {sum_frags:12,d} == len(dbsequence) {len(dbsequence):12,d}"
 
     T_ = str(T) if len(T) < 45 else str(T[:20]).strip("]") + " ... " + str(T[-20:]).strip("[")
     K_ = str(K) if len(K) < 45 else str(K[:20]).strip("]") + " ... " + str(K[-20:]).strip("[")
@@ -377,8 +383,20 @@ def main(vocab, kmer_size):
         (str(l) if len(l) < 45 else str(l[:20]).strip("]") + " ... " + str(l[-20:]).strip("["))
         for l in L
         ]
-    dbsequence_     = str(dbsequence)     if len(dbsequence)     < 45 else str(dbsequence[:20])    .strip("]") + " ... " + str(dbsequence[-20:])    .strip("[")
-    dbsequence_str_ = str(dbsequence_str) if len(dbsequence_str) < 45 else str(dbsequence_str[:20]).strip("]") + " ... " + str(dbsequence_str[-20:]).strip("[")
+    
+    if len(dbsequence)     < 45:
+        dbsequence_     = dbsequence
+        dbsequence_str_ = "".join([vocab[l] for l in dbsequence])
+
+    else:
+        if isinstance(dbsequence, (np.ndarray, np.memmap)):
+            dbsequence__     = np.hstack((dbsequence[:20], dbsequence[-20:]))
+        else:
+            dbsequence__     = dbsequence[:20] + dbsequence[-20:]
+        dbsequence_str__ = "".join([vocab[l] for l in dbsequence__])
+        dbsequence_      = str(dbsequence__[:20])    .strip("]") + " ... " + str(dbsequence__[-20:])    .strip("[")
+        dbsequence_str_  = str(dbsequence_str__[:20]).strip("]") + " ... " + str(dbsequence_str__[-20:]).strip("[")
+
     matrix_size     = (vocab_size ** kmer_size)
 
     print_info(f" vocabulary    : {vocab} ({len(vocab)})")
