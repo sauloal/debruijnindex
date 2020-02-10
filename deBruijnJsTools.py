@@ -250,13 +250,13 @@ def fromJson(db_file):
     return data
 
 def openNpArray(filename, shape):
-    print(f"openNpArray         :: filename {filename} shape {shape}")
+    print(f"openNpArray           :: filename {filename} shape {shape}")
     assert os.path.exists(filename), f"file {filename} does not exists. cannot open"
     a = np.memmap(filename, dtype='int64', mode='r+', shape=shape)
     return a
 
 def createNpArray(filename, shape):
-    print(f"createNpArray       :: filename {filename} shape {shape}")
+    print(f"createNpArray         :: filename {filename} shape {shape}")
     assert not os.path.exists(filename), f"file {filename} exists. cannot create"
     a = np.memmap(filename, dtype='int64', mode='w+', shape=shape)
     return a

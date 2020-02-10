@@ -67,11 +67,11 @@ def genDecodableDeBruijn(T, K, L, vocab_size, kmer_size, t_exists=False, k_exist
         lidx       = kmer_size - 3 
         tidx       = ((vocab_size ** kmer_size_)-1)
 
-        ldbf = f"{sys.argv[0]}.L.{vocab_size}_{kmer_size}_{lidx}_{tidx}.np"
-        seqf = f"{sys.argv[0]}.D.{vocab_size}_{kmer_size}.np"
+        ldbf       = f"{sys.argv[0]}.L.{vocab_size}_{kmer_size}_{lidx}_{tidx}.np"
+        seqf       = f"{sys.argv[0]}.D.{vocab_size}_{kmer_size}.np"
         
-        l_exists, L_lidx     = openOrCreateNp1DArray(ldbf, tidx)
-        d_exists             = os.path.exists(seqf)
+        l_exists, L_lidx = openOrCreateNp1DArray(ldbf, tidx)
+        d_exists         = os.path.exists(seqf)
 
         if not l_exists and d_exists:
             os.remove(ldbf)
@@ -352,6 +352,110 @@ def genDeBruijnDecodeMatrix(dbsequence, vocab_size, kmer_size):
     
     return decode_matrix
 
+def checkKmer(T, K, L, vocab, kmer_size, keys, level=None, kmer="", kid=0, karr=None):
+    if level is None:
+        level = kmer_size - 1
+        karr  = [None]    * kmer_size
+
+    if level >= 0:
+        for st in range(len(vocab)):
+            k1    = vocab[st]
+            v1    = 4**level*st
+            kmer_ = kmer + k1
+            kid_  = kid  + v1
+            karr[kmer_size-level-1] = st
+
+            checkKmer(T, K, L, vocab, kmer_size, keys, level=level-1, kmer=kmer_, kid=kid_, karr=karr)
+
+    else:
+        dwor = decodeDeBruijnWord(T, K, L, len(vocab), karr)
+        assert kmer in keys, f"kmer {kmer} not in keys"
+        assert keys[kmer] == dwor, f"keys[kmer] {keys[kmer]} == dwor {dwor}"
+        print(f"Reverse kmer {kmer} kid {kid:5d} dwor {dwor:5d} karr {karr}")
+
+def testRun(vocab, kmer_size, T_, K_, L_, dbsequence_, decode_matrix_):
+    vocab_size_    = len(vocab)
+
+    T, K, L, vocab_size, dbsequence = vocabToDeBruijn(vocab, kmer_size)
+
+    dbsequence_str = "".join([vocab[l] for l in dbsequence])
+
+    Tlst = ','.join([str(t) for t in T.tolist()])
+    Klst = ','.join([str(k) for k in K.tolist()])
+
+    print_info(f"test :: vocab_size    : {vocab_size}")
+    print_info(f"test :: kmer_size     : {kmer_size}")
+    print_info(f"test :: T             : {Tlst} ({len(T)})")
+    print_info(f"test :: K             : {Klst} ({len(K)})")
+    print_info(f"test :: L             : ({len(L)})")
+    for l in range(len(L)):
+        Llst = ','.join([str(ls) for ls in L[l].tolist()])
+        print_info(f"test ::  L[{l:2d}]        : {Llst} ({len(L[l])})")
+
+    dbsequenceLst = ','.join([str(s) for s in dbsequence.tolist()])
+    print_info(f"test :: dbsequence    : {dbsequenceLst} ({len(dbsequence)})")
+    print_info(f"test :: dbsequence_str: {dbsequence_str}")
+
+    assert vocab_size_ == vocab_size, f"{vocab_size_} != {vocab_size}"
+    assert len(dbsequence_) == len(dbsequence) , f"len(dbsequence_)({len(dbsequence_)}) != len(dbsequence)({len(dbsequence)})"
+    assert not (dbsequence_ - dbsequence).any(), f"{dbsequence_} != {dbsequence}"
+
+    assert len(T_) == len(T)                   , f"len(T_)({len(T_)}) != len(T)({len(T)})"
+    assert not (T_ - T).any()                  , f"{T_} != {T} {(T_ - T)}"
+
+    assert len(K_) == len(K)                   , f"len(K_)({len(K_)}) != len(K)({len(K)})"
+    assert not (K_ - K).any()                  , f"{K_} != {K} {(K_ - K)}"
+
+    assert len(L_) == len(L)                   , f"len(L_)({len(L_)}) != len(L)({len(L)})"
+
+    for l in range(len(L)):
+        assert len(L_[l]) == len(L[l])         , f"len(L_[{l}])({len(L_)}) != len(L[{l}])({len(L)})"
+        assert not (L_[l] - L[l]).any(), f"{L_[l]} != {L[l]} {(L_[l] - L[l])}"
+
+    decode_matrix = genDeBruijnDecodeMatrix(dbsequence, vocab_size, kmer_size)
+    # if decode_matrix_ is None:
+    #     decode_matrix_ = decode_matrix
+
+    # decode_matrixLst = ','.join([str(s) for s in decode_matrix.tolist()])
+    decode_matrixLst = ','.join([str(s) for s in decode_matrix])
+    print_info(f"test :: decode_matrix : {decode_matrixLst} ({len(decode_matrix)})")
+
+    assert decode_matrix_ == decode_matrix
+
+    dbsequence_str_circ = dbsequence_str + dbsequence_str[:kmer_size-1] # circular
+    keys   = {}
+    for kpos in range(len(dbsequence_str)):
+        kmer = dbsequence_str_circ[kpos:kpos+kmer_size]
+        karr = [vocab.index(p) for p in kmer]
+        dwor = decodeDeBruijnWord(T, K, L, vocab_size, karr)
+        print(f"Forward kmer {kmer} kid {kpos:5d} dwor {dwor:5d} karr {karr}")
+        keys[kmer] = dwor
+
+    print("***")
+    
+    checkKmer(T, K, L, vocab, kmer_size, keys)
+
+def test():
+    vocab = "ACGT"
+
+    import deBruijnJsTest
+
+    for testinfo in deBruijnJsTest.tests:
+        kmer_size     = testinfo["kmer_size"]
+        T             = testinfo["T"]
+        K             = testinfo["K"]
+        L             = testinfo["L"]
+        dbsequence    = testinfo["dbsequence"]
+        decode_matrix = testinfo["decode_matrix"]
+        print(f"Running test for vocab {vocab} and kmer {kmer_size}")
+        testRun(vocab, kmer_size, T, K, L, dbsequence, decode_matrix)
+        print_info(f"passed test {kmer_size}")
+        print_info("----------------")
+
+    print_info("all tests passed")
+    print_info("----------------")
+    print_info("================")
+    print_info("----------------")
 
 def main(vocab, kmer_size):
     print("main", vocab, kmer_size)
@@ -416,72 +520,8 @@ def main(vocab, kmer_size):
 
     # print_info(f" decode_matrix : {decode_matrix_} ({len(decode_matrix)})")
 
-def test():
-    vocab          = "ACGT"
-    kmer_size      = 3
-    vocab_size_    = len(vocab)
-    T_             = [0,2,4,15,1,7,9,6,3,8,12,11,5,10,13,14]
-    K_             = [7,45]
-    L_             = [[0,0,0,1,1,3,3,2,3,1,2,1,3,1,0]]
-    dbsequence_    = [0,0,0,1,1,3,3,2,3,1,2,1,3,1,0,3,3,3,0,0,2,2,1,2,0,1,0,2,0,3,2,2,2,3,3,1,1,0,1,3,0,3,1,3,2,1,1,1,2,2,0,0,3,0,1,2,3,0,2,3,2,0,2,1]
-    decode_matrix_ = [0,1,18,50,24,2,53,37,26,61,19,57,51,40,28,14,63,36,25,13,35,45,46,3,22,9,47,54,38,11,42,4,49,23,60,27,62,44,21,10,48,20,30,31,55,7,58,32,17,52,56,39,12,34,8,41,59,43,29,6,16,33,5,15]
-
-    T, K, L, vocab_size, dbsequence = vocabToDeBruijn(vocab, kmer_size)
-
-    assert vocab_size_ == vocab_size, f"{vocab_size_} != {vocab_size}"
-    assert not (dbsequence_ - dbsequence).any(), f"{dbsequence_} != {dbsequence}"
-    assert not (T_ - T).any()                  , f"{T_} != {T} {(T_ - T)}"
-    assert not (K_ - K).any()                  , f"{K_} != {K} {(K_ - K)}"
-    # assert not (L_ - L).any(), f"{L_} != {L} {(L_ - L)}"
-    assert len(L) == len(L_)
-    for l in range(len(L)):
-        assert not (L_[l] - L[l]).any(), f"{L_[l]} != {L[l]} {(L_[l] - L[l])}"
-
-    dbsequence_str = "".join([vocab[l] for l in dbsequence])
-
-    print_info(f"test :: T             : {T} ({len(T)})")
-    print_info(f"test :: K             : {K} ({len(K)})")
-    print_info(f"test :: L             : {L} ({len(L)})")
-    for l in range(len(L)):
-        print_info(f"test ::  L[{l:2d}]        : {L[l]} ({len(L[l])})")
-    print_info(f"test :: dbsequence    : {dbsequence} ({len(dbsequence)})")
-    print_info(f"test :: dbsequence_str: {dbsequence_str}")
-    print_info(f"test :: vocab_size    : {vocab_size}")
-    print_info(f"test :: kmer_size     : {kmer_size}")
-
-    decode_matrix = genDeBruijnDecodeMatrix(dbsequence, vocab_size, kmer_size)
-    assert decode_matrix_ == decode_matrix
-
-    print_info(f"test :: decode_matrix : {decode_matrix} ({len(decode_matrix)})")
-
-    dbsequence_str_circ = dbsequence_str + dbsequence_str[:kmer_size-1] # circular
-    keys   = {}
-    for kpos in range(len(dbsequence_str)):
-        kmer = dbsequence_str_circ[kpos:kpos+kmer_size]
-        karr = [vocab.index(p) for p in kmer]
-        dwor = decodeDeBruijnWord(T, K, L, vocab_size, karr)
-        print(kpos, kmer, karr, dwor)
-        keys[kmer] = dwor
-
-    #TODO: generalize
-    for st in range(len(vocab)):
-        for nd in range(len(vocab)):
-            for rd in range(len(vocab)):
-                kmer = vocab[st] + vocab[nd] + vocab[rd]
-                kid  = 4**2*st + 4**1*nd + 4**0*rd
-                karr = [st, nd, rd]
-                dwor = decodeDeBruijnWord(T, K, L, vocab_size, karr)
-                assert keys[kmer] == dwor
-                print(kmer, kid, dwor)
-
-    print_info("all tests passed")
-    print_info("----------------")
-    print_info("================")
-    print_info("----------------")
-
-
 if __name__ == '__main__':
-    test()
+    # test()
 
     vocab     =     sys.argv[1]
     kmer_size = int(sys.argv[2])
