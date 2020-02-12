@@ -249,33 +249,33 @@ def fromJson(db_file):
         data = json.load(fhd)
     return data
 
-def openNpArray(filename, shape):
-    print(f"openNpArray           :: filename {filename} shape {shape}")
+def openNpArray(filename, shape, dtype='int64'):
+    print(f"openNpArray           :: filename {filename} shape {shape} dtype {dtype}")
     assert os.path.exists(filename), f"file {filename} does not exists. cannot open"
-    a = np.memmap(filename, dtype='int64', mode='r+', shape=shape)
+    a = np.memmap(filename, dtype=dtype, mode='r+', shape=shape)
     return a
 
-def createNpArray(filename, shape):
-    print(f"createNpArray         :: filename {filename} shape {shape}")
+def createNpArray(filename, shape, dtype='int64'):
+    print(f"createNpArray         :: filename {filename} shape {shape} dtype {dtype}")
     assert not os.path.exists(filename), f"file {filename} exists. cannot create"
-    a = np.memmap(filename, dtype='int64', mode='w+', shape=shape)
+    a = np.memmap(filename, dtype=dtype, mode='w+', shape=shape)
     return a
 
-def openOrCreateNpArray(filename, shape):
-    print(f"openOrCreateNp1DArray :: filename {filename} shape {shape}")
+def openOrCreateNpArray(filename, shape, dtype='int64'):
+    print(f"openOrCreateNp1DArray :: filename {filename} shape {shape} dtype {dtype}")
     if os.path.exists(filename):
-        return True , openNp1DArray(filename, shape)
+        return True , openNpArray(filename, shape, dtype=dtype)
     else:
-        return False, createNp1DArray(filename, shape)
+        return False, createNpArray(filename, shape, dtype=dtype)
 
-def openNp1DArray(filename, shape):
-    print(f"openNp1DArray         :: filename {filename} shape {shape}")
-    return openNpArray(filename, (shape,))
+def openNp1DArray(filename, shape, dtype='int64'):
+    print(f"openNp1DArray         :: filename {filename} shape {shape} dtype {dtype}")
+    return openNpArray(filename, (shape,), dtype=dtype)
 
-def createNp1DArray(filename, shape):
-    print(f"createNp1DArray       :: filename {filename} shape {shape}")
-    return createNpArray(filename, (shape,))
+def createNp1DArray(filename, shape, dtype='int64'):
+    print(f"createNp1DArray       :: filename {filename} shape {shape} dtype {dtype}")
+    return createNpArray(filename, (shape,), dtype=dtype)
 
-def openOrCreateNp1DArray(filename, shape):
-    print(f"openOrCreateNp1DArray :: filename {filename} shape {shape}")
-    return openOrCreateNpArray(filename, (shape,))
+def openOrCreateNp1DArray(filename, shape, dtype='int64'):
+    print(f"openOrCreateNp1DArray :: filename {filename} shape {shape} dtype {dtype}")
+    return openOrCreateNpArray(filename, (shape,), dtype=dtype)

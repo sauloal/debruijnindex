@@ -12,14 +12,82 @@ import numpy as np
 
 
 
+def rolling_window(a, window):
+    # https://rigtorp.se/2011/01/01/rolling-statistics-numpy.html
+    # https://www.reddit.com/r/learnpython/comments/2xqlwj/using_npwhere_to_find_subarrays/
+    shape = a.shape[:-1] + (a.shape[-1] - window + 1, window)
+    strides = a.strides + (a.strides[-1],)
+    return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)
+
+def findFirst_numpy(a, b):
+    temp = rolling_window(a, len(b))
+    result = np.where(np.all(temp == b, axis=1))
+    return result[0][0] if result else None
+
+class DbSequence():
+    def __init__(self, kmer_size, filename=None):
+        self.len = 4 ** kmer_size
+        self.seq = [None] * self.len
+        self.pos = 0
+        self.fln = filename
+
+
+    def _parseItemGetterSetter(self, key):
+        assert isinstance(key, (slice, int))
+
+        if isinstance(key, slice):
+            start, stop, step = key.start, key.stop, key.step
+            assert isinstance(start, (int, type(None))), type(start)
+            assert isinstance(stop , (int, type(None))), type(stop)
+            assert isinstance(step , (int, type(None))), type(step)
+            if start is None:
+                start = 0
+            if stop is None:
+                stop = self.pos
+            if step is None:
+                step = 1
+            # assert start <= self.len
+            # assert stop  <= self.len # TODO: check negative
+            assert start >= 0
+            assert stop  >= 0
+            return start, stop, step
+        else:
+            # assert key   <= self.len
+            assert key   >= 0
+            return key, key, 1 # TODO: check return value not list
+
+    def append(self, val):
+        assert (self.pos + 1) <= self.len # TODO: check error by one
+        self.seq[self.pos] = val
+        self.pos += 1
+
+    def extend(self, val):
+        raise NotImplementedError
+
+    def __getitem__(self, key):
+        start, stop, step = self._parseItemGetterSetter(key)
+        if stop >= self.len:
+            return self.seq[start:self.len:step] + self.seq[0:stop-self.len:step] # TODO: check error by one
+        else:
+            return self.seq[start:stop:step]
+
+    def __setitem__(self, key, value):
+        start, stop, step = self._parseItemGetterSetter(key)
+        if stop >= self.len:
+            raise NotImplementedError
+        else:
+            self.seq[start:stop:step] = value
+            self.pos = stop
+
+
 class DeBruijn():
-    def __init__(self, vocab_size, kmer_size):
+    def __init__(self, vocab_size, kmer_size, filename=None):
         self.vocab_size      = vocab_size
         self.kmer_size       = kmer_size
 
         self.vocab_matrix_rw = False
         self.vocab_matrix    = [0 for j in range(vocab_size*kmer_size)]
-        self.dbsequence      = []
+        self.dbsequence      = DbSequence(kmer_size, filename=filename)
 
         # print_log(f"DeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size} vocab_matrix: {join_list(self.vocab_matrix)} dbsequence: {join_list(self.dbsequence)}")
         
@@ -33,7 +101,11 @@ class DeBruijn():
         if t > self.kmer_size:
             if (self.kmer_size % p) == 0:
                 for frame in range(p):
-                    self.dbsequence.append(int(self.vocab_matrix[frame+1]))
+                    val = int(self.vocab_matrix[frame+1])
+                    self.dbsequence.append(val)
+                    # self.dbsequence[self.dbsequencePos] = val
+                    # self.dbsequencePos += 1
+                    # self.appendToSequence(val)
                     # print_debug(f"DeBruijn :: generate :: t: {t} p: {p} vocab_size: {self.vocab_size} kmer_size: {self.kmer_size} frame: 0 vocab_matrix: {join_list(self.vocab_matrix)} dbsequence: {join_list(self.dbsequence)}")
 
         else:
@@ -51,27 +123,32 @@ def genDecodableDeBruijn(T, K, L, vocab_size, kmer_size, t_exists=False, k_exist
     if kmer_size <= 2:
         db          = DeBruijn(vocab_size, 2)
         dbsequence  = db.dbsequence
-        dbsequence_ = dbsequence + dbsequence[0:2]
+        # dbsequence_ = dbsequence + dbsequence[0:2]
+        # dbsequence  = db.dbsequence
+        # dbsequence_ = db.dbsequence
 
         # print_debug(f"genDecodableDeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size} db.dbsequence: {join_list(db.dbsequence)} dbsequence_: {join_list(dbsequence_)}")
         
         if not t_exists:
             for i in range(vocab_size ** 2):
-                word         = dbsequence_[i:i+2]
+                # word         = dbsequence_[i:i+2]
+                word         = db.dbsequence[i:i+2]
                 decoded_char = wordIndex(word, vocab_size)
                 # print_debug(f"genDecodableDeBruijn :: vocab_size: {vocab_size} kmer_size: {kmer_size} db.dbsequence: {join_list(db.dbsequence)} dbsequence_: {join_list(dbsequence_)} i: {i} word: {word} decoded_char: {decoded_char}")
                 T[decoded_char] = i
 
     else:
-        kmer_size_ = kmer_size - 1
-        lidx       = kmer_size - 3 
-        tidx       = ((vocab_size ** kmer_size_)-1)
+        kmer_size_       = kmer_size - 1
+        lidx             = kmer_size - 3 
+        tidx             = ((vocab_size ** kmer_size_)-1)
 
-        ldbf       = f"{sys.argv[0]}.L.{vocab_size}_{kmer_size}_{lidx}_{tidx}.np"
-        seqf       = f"{sys.argv[0]}.D.{vocab_size}_{kmer_size}.np"
+        ldbf             = f"{sys.argv[0]}.L.{vocab_size}_{kmer_size:02d}_{lidx:02d}_{tidx}.np"
+        seqf             = f"{sys.argv[0]}.D.{vocab_size}_{kmer_size_:02d}.np"
         
         l_exists, L_lidx = openOrCreateNp1DArray(ldbf, tidx)
         d_exists         = os.path.exists(seqf)
+
+        L[lidx] = L_lidx
 
         if not l_exists and d_exists:
             os.remove(ldbf)
@@ -83,14 +160,16 @@ def genDecodableDeBruijn(T, K, L, vocab_size, kmer_size, t_exists=False, k_exist
             l_exists = False
             print(f"Deleting {seqf}")
 
-        if d_exists:
-            dfsize               = os.path.getsize(seqf)
-            dflen                = dfsize // 8
-            d_exists, dbsequence = openOrCreateNp1DArray(seqf, dflen)
-        else:
-            dbsequence = []
 
-        L[lidx] = L_lidx
+        # if d_exists:
+        #     dfsize               = os.path.getsize(seqf)
+        #     dflen                = dfsize
+        #     d_exists, dbsequence = openOrCreateNp1DArray(seqf, dflen)
+
+        # else:
+        #     dbsequence = []
+        dbsequence = DbSequence(kmer_size_, filename=seqf)
+
 
         if l_exists and d_exists:
             genDecodableDeBruijn(T, K, L, vocab_size, kmer_size_, t_exists=t_exists, k_exists=k_exists)
@@ -150,24 +229,15 @@ def genDecodableDeBruijn(T, K, L, vocab_size, kmer_size, t_exists=False, k_exist
 
     return T, K, L, dbsequence
 
-def rolling_window(a, window):
-    # https://rigtorp.se/2011/01/01/rolling-statistics-numpy.html
-    # https://www.reddit.com/r/learnpython/comments/2xqlwj/using_npwhere_to_find_subarrays/
-    shape = a.shape[:-1] + (a.shape[-1] - window + 1, window)
-    strides = a.strides + (a.strides[-1],)
-    return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)
-
-def findFirst_numpy(a, b):
-    temp = rolling_window(a, len(b))
-    result = np.where(np.all(temp == b, axis=1))
-    return result[0][0] if result else None
-
 def vocabToDeBruijn(vocab, kmer_size):
     # print_debug(f"vocabToDeBruijn :: vocab: {vocab} kmer_size: {kmer_size}")
 
-    vocab_size = len(vocab)
+    vocab_size  = len(vocab)
 
-    db_file    = f"{vocab_size}_{kmer_size:02d}.vars.json.gz"
+    db_file     = f"{vocab_size}_{kmer_size:02d}.vars.json.gz"
+    tF          = f"{sys.argv[0]}.T.{vocab_size}.np"
+    kF          = f"{sys.argv[0]}.K.{kmer_size:02d}.np"
+    seqf        = f"{sys.argv[0]}.D.{vocab_size}_{kmer_size:02d}.np"
 
     if os.path.exists(db_file):
         print(f"reading vars")
@@ -175,10 +245,9 @@ def vocabToDeBruijn(vocab, kmer_size):
 
         len_t, len_k, lens_l, len_dbsequence, vocab_size_, kmer_size_ = fromJson(db_file)
 
-        T = openNp1DArray(f"{sys.argv[0]}.T.{vocab_size}.np", (vocab_size ** 2))
-        K = openNp1DArray(f"{sys.argv[0]}.K.{kmer_size}.np" , (kmer_size  -  1))
-
-        L = [None] * len(lens_l)
+        T           = openNp1DArray(tF, (vocab_size ** 2))
+        K           = openNp1DArray(kF, (kmer_size  -  1))
+        L           = [None] * len(lens_l)
         kmer_size__ = kmer_size
         for lidx_, tidx_ in enumerate(reversed(lens_l)):
             lidx_        = len(lens_l) - lidx_ - 1
@@ -189,18 +258,17 @@ def vocabToDeBruijn(vocab, kmer_size):
             assert lidx == lidx_
             assert tidx == tidx_
 
-            ldbf         = f"{sys.argv[0]}.L.{vocab_size}_{kmer_size__}_{lidx}_{tidx}.np"
-            L_idx        = openNp1DArray(ldbf, tidx)
+            ldbf         = f"{sys.argv[0]}.L.{vocab_size}_{kmer_size__:02d}_{lidx:02d}_{tidx}.np"
+            L_idx        = openNp1DArray(ldbf, tidx, dtype='int8')
             L[lidx]      = L_idx
             kmer_size__ -= 1
 
-        seqf = f"{sys.argv[0]}.D.{vocab_size}_{kmer_size}.np"
-        dbsequence = openNp1DArray(seqf, len_dbsequence)
+        dbsequence = openNp1DArray(seqf, len_dbsequence, dtype='int8')
 
         assert vocab_size == vocab_size_
         assert kmer_size  == kmer_size_
-        assert len_t == len(T)
-        assert len_k == len(K)
+        assert len_t      == len(T)
+        assert len_k      == len(K)
         return T, K, L, vocab_size, dbsequence
 
     else:
@@ -210,8 +278,8 @@ def vocabToDeBruijn(vocab, kmer_size):
         # K = [None] * (kmer_size-1)
         # L = [None] * (kmer_size-2)
 
-        t_exists, T = openOrCreateNp1DArray(f"{sys.argv[0]}.T.{vocab_size}.np", (vocab_size ** 2))
-        k_exists, K = openOrCreateNp1DArray(f"{sys.argv[0]}.K.{kmer_size}.np" , (kmer_size  -  1))
+        t_exists, T = openOrCreateNp1DArray(tF, (vocab_size ** 2))
+        k_exists, K = openOrCreateNp1DArray(kF, (kmer_size  -  1))
         L           = [None] * (kmer_size-2)
 
         # print_debug(f"vocabToDeBruijn :: vocab: {vocab} vocab_size: {vocab_size} kmer_size: {kmer_size} T: {join_list(T)} K: {join_list(K)} L: {join_list(L)}")
@@ -221,9 +289,9 @@ def vocabToDeBruijn(vocab, kmer_size):
         T.flush()
         K.flush()
 
-        print("T", T)
-        print("K", K)
-        print("L", L)
+        print("T         ", T)
+        print("K         ", K)
+        print("L         ", L)
         print("dbsequence", dbsequence)
         # print("vocab_size", vocab_size)
         # print("kmer_size ", kmer_size)
@@ -521,8 +589,8 @@ def main(vocab, kmer_size):
     # print_info(f" decode_matrix : {decode_matrix_} ({len(decode_matrix)})")
 
 if __name__ == '__main__':
-    # test()
+    test()
 
-    vocab     =     sys.argv[1]
-    kmer_size = int(sys.argv[2])
-    main(vocab, kmer_size)
+    # vocab     =     sys.argv[1]
+    # kmer_size = int(sys.argv[2])
+    # main(vocab, kmer_size)
